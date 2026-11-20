@@ -1,0 +1,50 @@
+@{
+    ViewData["Title"] = "Áreas";
+    var consultas = Url.Action("Index", "Consulta");
+    var equipes = Url.Action("Index", "Funcionario");
+    var tutores = Url.Action("Index", "Tutor");
+    var pets = Url.Action("Index", "Pet");
+}
+
+<section class="area-panel" data-area-panel="recepcao" hidden>
+    <h1>Recepção</h1>
+    <p>Cadastre tutores e pets e organize as consultas da clínica.</p>
+    <ul class="module-list">
+        <li>
+            @if (tutores is not null) { <a href="@tutores">Tutores</a> }
+            else { <span>Tutores <small>Em desenvolvimento</small></span> }
+        </li>
+        <li>
+            @if (pets is not null) { <a href="@pets">Pets</a> }
+            else { <span>Pets <small>Em desenvolvimento</small></span> }
+        </li>
+        <li>
+            @if (consultas is not null) { <a href="@consultas">Agendamentos</a> }
+            else { <span>Agendamentos <small>Em desenvolvimento</small></span> }
+        </li>
+    </ul>
+</section>
+
+<section class="area-panel" data-area-panel="veterinario" hidden>
+    <h1>Veterinário</h1>
+    <p>Consulte a agenda e acompanhe os atendimentos.</p>
+    <ul class="module-list">
+        <li>
+            @if (consultas is not null) { <a href="@consultas">Agenda e atendimentos</a> }
+            else { <span>Agenda e atendimentos <small>Em desenvolvimento</small></span> }
+        </li>
+    </ul>
+</section>
+
+<section class="area-panel" data-area-panel="administracao" hidden>
+    <h1>Administração</h1>
+    <p>Gerencie os funcionários da clínica.</p>
+    <ul class="module-list">
+        <li>
+            @if (equipes is not null) { <a href="@equipes">Funcionários</a> }
+            else { <span>Funcionários <small>Em desenvolvimento</small></span> }
+        </li>
+    </ul>
+</section>
+
+<noscript>Ative o JavaScript para selecionar um perfil e navegar pelas áreas.</noscript>
