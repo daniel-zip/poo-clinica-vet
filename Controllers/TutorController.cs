@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using VetCare.Exceptions;
 using VetCare.Models;
 using VetCare.Models.ViewModels.Tutor;
+using VetCare.Repositories.Dapper;
 using VetCare.Repositories.Interfaces;
 
 namespace VetCare.Controllers;
@@ -9,16 +10,35 @@ namespace VetCare.Controllers;
 public class TutorController : Controller
 {
     private readonly IRepository<Tutor> _tutores;
+    private readonly PetRepository _pets;
 
-    public TutorController(IRepository<Tutor> tutores)
+    public TutorController(IRepository<Tutor> tutores, PetRepository pets)
     {
         _tutores = tutores;
+        _pets = pets;
     }
 
     [HttpGet]
     public IActionResult Index()
     {
         return View(_tutores.Listar());
+    }
+
+    [HttpGet]
+    public IActionResult Detalhes(int id)
+    {
+        var tutor = _tutores.ObterPorId(id);
+        if (tutor is null)
+        {
+            return TutorNaoEncontrado();
+        }
+
+        foreach (var pet in _pets.ListarPorTutor(id))
+        {
+            tutor.AdicionarPet(pet);
+        }
+
+        return View(tutor);
     }
 
     [HttpGet]

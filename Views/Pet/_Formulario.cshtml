@@ -1,0 +1,75 @@
+@model VetCare.Models.ViewModels.Pet.PetFormularioViewModel
+@using VetCare.Models.Enums
+
+<div asp-validation-summary="ModelOnly" class="tutor-error" role="alert"></div>
+
+@if (Model.Tutores.Count == 0)
+{
+    <p>É preciso <a asp-controller="Tutor" asp-action="Cadastrar">cadastrar um tutor</a> antes de cadastrar um pet.</p>
+}
+@if (Model.Racas.Count == 0)
+{
+    <p>Peça à Administração que cadastre uma espécie e uma raça no catálogo.</p>
+}
+
+<div class="tutor-field">
+    <label asp-for="Nome"></label>
+    <input asp-for="Nome" required />
+    <span asp-validation-for="Nome" class="tutor-error"></span>
+</div>
+<div class="tutor-field">
+    <label asp-for="DataNascimento"></label>
+    <input asp-for="DataNascimento" type="date" max="@DateTime.Today.ToString("yyyy-MM-dd")" required />
+    <span asp-validation-for="DataNascimento" class="tutor-error"></span>
+</div>
+<div class="tutor-field">
+    <label asp-for="Peso"></label>
+    <input asp-for="Peso" type="number" min="0" step="any" required />
+    <span asp-validation-for="Peso" class="tutor-error"></span>
+</div>
+<div class="tutor-field">
+    <label asp-for="Sexo"></label>
+    <select asp-for="Sexo" asp-items="Html.GetEnumSelectList<SexoPet>()" required>
+        <option value="">Selecione o sexo</option>
+    </select>
+    <span asp-validation-for="Sexo" class="tutor-error"></span>
+</div>
+<div class="tutor-field">
+    <label asp-for="TutorId"></label>
+    <select asp-for="TutorId" required>
+        <option value="">Selecione um tutor</option>
+        @foreach (var tutor in Model.Tutores)
+        {
+            <option value="@tutor.Id">@tutor.Nome (CPF @tutor.Cpf)</option>
+        }
+    </select>
+    <span asp-validation-for="TutorId" class="tutor-error"></span>
+</div>
+<div class="tutor-field">
+    <label asp-for="EspecieId"></label>
+    <select asp-for="EspecieId" data-pet-especie required>
+        <option value="">Selecione uma espécie</option>
+        @foreach (var especie in Model.Especies)
+        {
+            <option value="@especie.Id">@especie.Nome</option>
+        }
+    </select>
+    <span asp-validation-for="EspecieId" class="tutor-error"></span>
+</div>
+<div class="tutor-field">
+    <label asp-for="RacaId"></label>
+    <select asp-for="RacaId" data-pet-raca required>
+        <option value="">Selecione uma raça</option>
+        @foreach (var raca in Model.Racas)
+        {
+            <option value="@raca.Id" data-especie-id="@raca.EspecieId">@raca.Nome</option>
+        }
+    </select>
+    <span asp-validation-for="RacaId" class="tutor-error"></span>
+</div>
+<div class="tutor-actions">
+    <button class="switch-button" type="submit" disabled="@(Model.Tutores.Count == 0 || Model.Racas.Count == 0)">Salvar</button>
+    <a asp-action="Index">Cancelar</a>
+</div>
+
+<script src="~/js/pet-formulario.js" asp-append-version="true" defer></script>

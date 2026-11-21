@@ -1,0 +1,20 @@
+@model VetCare.Models.ViewModels.Pet.PetResumoViewModel
+@using VetCare.Models.Enums
+@{ ViewData["Title"] = Model.Pet.Nome; }
+
+<section class="area-panel">
+    <h1>@Model.Pet.Nome</h1>
+    <dl>
+        <dt>Tutor</dt><dd>@Model.Tutor</dd>
+        <dt>Espécie</dt><dd>@Model.Especie</dd>
+        <dt>Raça</dt><dd>@Model.Raca</dd>
+        <dt>Sexo</dt><dd>@(Model.Pet.Sexo == SexoPet.Femea ? "Fêmea" : "Macho")</dd>
+        <dt>Data de nascimento</dt><dd>@Model.Pet.DataNascimento.ToString("dd/MM/yyyy")</dd>
+        <dt>Idade em anos completos</dt><dd>@Model.Pet.CalcularIdade()</dd>
+        <dt>Peso</dt><dd>@Model.Pet.Peso kg</dd>
+    </dl>
+    <div class="tutor-actions">
+        <a class="switch-button" asp-action="Editar" asp-route-id="@Model.Pet.Id">Editar pet</a>
+        <a asp-action="Index">Voltar à lista</a>
+    </div>
+</section>

@@ -42,6 +42,7 @@
                             <td>@tutor.Cpf</td>
                             <td>@tutor.Telefone</td>
                             <td class="tutor-actions">
+                                <a asp-action="Detalhes" asp-route-id="@tutor.Id" aria-label="Detalhes de @tutor.Nome">Detalhes</a>
                                 <a asp-action="Editar" asp-route-id="@tutor.Id" aria-label="Editar @tutor.Nome">Editar</a>
                                 <a asp-action="Excluir" asp-route-id="@tutor.Id" aria-label="Excluir @tutor.Nome">Excluir</a>
                             </td>

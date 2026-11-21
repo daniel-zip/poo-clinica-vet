@@ -1,0 +1,41 @@
+@model IReadOnlyList<VetCare.Models.ViewModels.Pet.PetResumoViewModel>
+@{ ViewData["Title"] = "Pets"; }
+
+<section class="area-panel">
+    <div class="tutor-heading">
+        <h1>Pets</h1>
+        <a class="switch-button tutor-button" asp-action="Cadastrar">Cadastrar pet</a>
+    </div>
+
+    @if (TempData["PetMensagem"] is string mensagem) { <p role="status">@mensagem</p> }
+    @if (TempData["PetErro"] is string erro) { <p class="tutor-error" role="alert">@erro</p> }
+
+    @if (Model.Count == 0)
+    {
+        <p>Nenhum pet cadastrado.</p>
+    }
+    else
+    {
+        <div class="tutor-table-wrap">
+            <table class="tutor-table">
+                <thead>
+                    <tr><th scope="col">Nome</th><th scope="col">Tutor</th><th scope="col">Espécie e raça</th><th scope="col">Ações</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td><a asp-action="Detalhes" asp-route-id="@item.Pet.Id">@item.Pet.Nome</a></td>
+                            <td>@item.Tutor</td>
+                            <td>@item.Especie · @item.Raca</td>
+                            <td class="tutor-actions">
+                                <a asp-action="Editar" asp-route-id="@item.Pet.Id" aria-label="Editar @item.Pet.Nome">Editar</a>
+                                <a asp-action="Excluir" asp-route-id="@item.Pet.Id" aria-label="Excluir @item.Pet.Nome">Excluir</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>

@@ -1,0 +1,9 @@
+@model VetCare.Models.ViewModels.Pet.PetFormularioViewModel
+@{ ViewData["Title"] = "Cadastrar pet"; }
+
+<section class="area-panel">
+    <h1>Cadastrar pet</h1>
+    <form class="tutor-form" asp-action="Cadastrar" method="post">
+        <partial name="_Formulario" model="Model" />
+    </form>
+</section>

@@ -4,6 +4,9 @@ namespace VetCare.Models;
 
 public class Tutor
 {
+    private readonly List<Pet> _pets = [];
+
+    public IReadOnlyList<Pet> Pets => _pets.AsReadOnly();
     public int Id { get; }
     public string Nome { get; private set; } = string.Empty;
     public string Cpf { get; private set; } = string.Empty;
@@ -22,6 +25,19 @@ public class Tutor
 
         Id = id;
         AtualizarDados(nome, cpf, telefone);
+    }
+
+    public void AdicionarPet(Pet pet)
+    {
+        if (Id <= 0 || pet.TutorId != Id)
+        {
+            throw new RegraNegocioException("O pet deve estar vinculado a este tutor.");
+        }
+
+        if (!_pets.Contains(pet) && (pet.Id == 0 || !_pets.Any(item => item.Id == pet.Id)))
+        {
+            _pets.Add(pet);
+        }
     }
 
     public void AtualizarDados(string nome, string cpf, string telefone)

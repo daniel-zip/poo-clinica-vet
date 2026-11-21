@@ -1,0 +1,14 @@
+@model VetCare.Models.Pet
+@{ ViewData["Title"] = "Excluir pet"; }
+
+<section class="area-panel">
+    <h1>Excluir pet</h1>
+    <p>Confirma a exclusão de <strong>@Model.Nome</strong>?</p>
+    <form asp-action="Excluir" asp-route-id="@Model.Id" method="post">
+        <div asp-validation-summary="ModelOnly" class="tutor-error" role="alert"></div>
+        <div class="tutor-actions">
+            <button class="switch-button" type="submit">Excluir pet</button>
+            <a asp-action="Index">Cancelar</a>
+        </div>
+    </form>
+</section>

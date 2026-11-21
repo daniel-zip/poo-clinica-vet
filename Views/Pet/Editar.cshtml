@@ -1,0 +1,9 @@
+@model VetCare.Models.ViewModels.Pet.PetFormularioViewModel
+@{ ViewData["Title"] = "Editar pet"; }
+
+<section class="area-panel">
+    <h1>Editar pet</h1>
+    <form class="tutor-form" asp-action="Editar" asp-route-id="@ViewData["PetId"]" method="post">
+        <partial name="_Formulario" model="Model" />
+    </form>
+</section>

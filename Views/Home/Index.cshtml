@@ -4,6 +4,7 @@
     var equipes = Url.Action("Index", "Funcionario");
     var tutores = Url.Action("Index", "Tutor");
     var pets = Url.Action("Index", "Pet");
+    var catalogos = Url.Action("Catalogos", "Pet");
 }
 
 <section class="area-panel" data-area-panel="recepcao" hidden>
@@ -38,12 +39,16 @@
 
 <section class="area-panel" data-area-panel="administracao" hidden>
     <h1>Administração</h1>
-    <p>Gerencie os funcionários da clínica.</p>
+    <p>Gerencie os funcionários e os catálogos da clínica.</p>
     <ul class="module-list">
         <li>
             @if (equipes is not null) { <a href="@equipes">Funcionários</a> }
             else { <span>Funcionários <small>Em desenvolvimento</small></span> }
         </li>
+        @if (catalogos is not null)
+        {
+            <li><a href="@catalogos">Catálogos</a></li>
+        }
     </ul>
 </section>
 
