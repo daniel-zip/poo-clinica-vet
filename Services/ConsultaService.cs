@@ -18,6 +18,18 @@ public class ConsultaService
         _funcionarios = funcionarios;
     }
 
+    public List<Consulta> ListarAgenda(DateTime? data = null)
+    {
+        var consultas = _consultas.Listar();
+        return data is DateTime dia
+            ? consultas.Where(consulta => consulta.DataHora.Date == dia.Date).ToList()
+            : consultas;
+    }
+
+    public List<Consulta> ListarHistoricoPorPet(int petId) => _consultas.ListarPorPet(petId);
+
+    public Consulta? ConsultarPorId(int id) => _consultas.ObterPorId(id);
+
     public void Agendar(int petId, int veterinarioId, DateTime dataHora, string queixaInicial, bool urgencia)
     {
         var consulta = new Consulta(petId, veterinarioId, dataHora, queixaInicial, urgencia);
@@ -57,7 +69,7 @@ public class ConsultaService
     }
 
     private Consulta ObterConsulta(int id) =>
-        _consultas.ObterPorId(id) ?? throw new RegraNegocioException("A consulta não foi encontrada.");
+        ConsultarPorId(id) ?? throw new RegraNegocioException("A consulta não foi encontrada.");
 
     private void ValidarVinculos(Consulta consulta)
     {
