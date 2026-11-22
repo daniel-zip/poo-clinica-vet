@@ -1,0 +1,94 @@
+using VetCare.Exceptions;
+using VetCare.Models.Enums;
+
+namespace VetCare.Models;
+
+public class Consulta
+{
+    public int Id { get; }
+    public int PetId { get; }
+    public int VeterinarioId { get; }
+    public DateTime DataHora { get; private set; }
+    public StatusConsulta Status { get; private set; }
+    public string QueixaInicial { get; }
+    public bool Urgencia { get; }
+    public string? Diagnostico { get; private set; }
+    public string? Procedimentos { get; private set; }
+    public string? Prescricao { get; private set; }
+
+    public Consulta(int petId, int veterinarioId, DateTime dataHora, string queixaInicial, bool urgencia)
+        : this(0, petId, veterinarioId, dataHora, StatusConsulta.Agendada, queixaInicial, urgencia,
+            null, null, null)
+    {
+    }
+
+    // Usado pelo repositório para recuperar o estado persistido da consulta.
+    internal Consulta(int id, int petId, int veterinarioId, DateTime dataHora, StatusConsulta status,
+        string queixaInicial, bool urgencia, string? diagnostico, string? procedimentos, string? prescricao)
+    {
+        if (id < 0)
+            throw new RegraNegocioException("O identificador da consulta é inválido.");
+        if (petId <= 0)
+            throw new RegraNegocioException("Selecione um pet cadastrado.");
+        if (veterinarioId <= 0)
+            throw new RegraNegocioException("Selecione um veterinário cadastrado.");
+        if (!Enum.IsDefined(status))
+            throw new RegraNegocioException("O status da consulta é inválido.");
+        if (string.IsNullOrWhiteSpace(queixaInicial))
+            throw new RegraNegocioException("Informe a queixa inicial da consulta.");
+
+        ValidarHorario(dataHora);
+
+        Id = id;
+        PetId = petId;
+        VeterinarioId = veterinarioId;
+        DataHora = dataHora;
+        Status = status;
+        QueixaInicial = queixaInicial.Trim();
+        Urgencia = urgencia;
+        Diagnostico = diagnostico;
+        Procedimentos = procedimentos;
+        Prescricao = prescricao;
+    }
+
+    public void Reagendar(DateTime novaDataHora)
+    {
+        ExigirAgendada();
+        ValidarHorario(novaDataHora);
+        DataHora = novaDataHora;
+    }
+
+    public void Cancelar()
+    {
+        ExigirAgendada();
+        Status = StatusConsulta.Cancelada;
+    }
+
+    public void RegistrarAtendimento(string? diagnostico, string? procedimentos, string? prescricao)
+    {
+        ExigirAgendada();
+        Diagnostico = diagnostico;
+        Procedimentos = procedimentos;
+        Prescricao = prescricao;
+    }
+
+    public void Finalizar()
+    {
+        ExigirAgendada();
+        Status = StatusConsulta.Finalizada;
+    }
+
+    private void ExigirAgendada()
+    {
+        if (Status != StatusConsulta.Agendada)
+            throw new RegraNegocioException("Somente consultas agendadas podem ser alteradas.");
+    }
+
+    private static void ValidarHorario(DateTime dataHora)
+    {
+        if (dataHora == default)
+            throw new RegraNegocioException("Informe a data e o horário da consulta.");
+        if (dataHora.TimeOfDay.Ticks % (30 * TimeSpan.TicksPerMinute) != 0)
+            throw new RegraNegocioException("Selecione um horário em intervalos de 30 minutos.");
+    }
+}
