@@ -16,6 +16,17 @@ public class Consulta
     public string? Procedimentos { get; private set; }
     public string? Prescricao { get; private set; }
 
+    internal DateTime DataHoraOriginal { get; private set; }
+    internal string? DiagnosticoOriginal { get; private set; }
+    internal string? ProcedimentosOriginais { get; private set; }
+    internal string? PrescricaoOriginal { get; private set; }
+
+    internal bool HorarioAlterado => DataHora != DataHoraOriginal;
+    internal bool DiagnosticoAlterado => Diagnostico != DiagnosticoOriginal;
+    internal bool ProcedimentosAlterados => Procedimentos != ProcedimentosOriginais;
+    internal bool PrescricaoAlterada => Prescricao != PrescricaoOriginal;
+    internal bool StatusAlterado { get; private set; }
+
     public Consulta(int petId, int veterinarioId, DateTime dataHora, string queixaInicial, bool urgencia)
         : this(0, petId, veterinarioId, dataHora, StatusConsulta.Agendada, queixaInicial, urgencia,
             null, null, null)
@@ -49,6 +60,7 @@ public class Consulta
         Diagnostico = diagnostico;
         Procedimentos = procedimentos;
         Prescricao = prescricao;
+        ConfirmarAtualizacao();
     }
 
     public void Reagendar(DateTime novaDataHora)
@@ -62,6 +74,7 @@ public class Consulta
     {
         ExigirAgendada();
         Status = StatusConsulta.Cancelada;
+        StatusAlterado = true;
     }
 
     public void RegistrarAtendimento(string? diagnostico, string? procedimentos, string? prescricao)
@@ -76,6 +89,16 @@ public class Consulta
     {
         ExigirAgendada();
         Status = StatusConsulta.Finalizada;
+        StatusAlterado = true;
+    }
+
+    internal void ConfirmarAtualizacao()
+    {
+        DataHoraOriginal = DataHora;
+        DiagnosticoOriginal = Diagnostico;
+        ProcedimentosOriginais = Procedimentos;
+        PrescricaoOriginal = Prescricao;
+        StatusAlterado = false;
     }
 
     private void ExigirAgendada()

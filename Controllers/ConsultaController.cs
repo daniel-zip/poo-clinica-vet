@@ -40,7 +40,7 @@ public class ConsultaController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public IActionResult Agendar(ConsultaAgendarViewModel formulario)
+    public IActionResult Agendar(ConsultaAgendarViewModel formulario, [FromQuery] string? areaClinica = null)
     {
         if (!ModelState.IsValid || formulario.PetId is not int petId ||
             formulario.VeterinarioId is not int veterinarioId || formulario.DataHora is not DateTime dataHora)
@@ -59,11 +59,11 @@ public class ConsultaController : Controller
         }
 
         TempData["ConsultaMensagem"] = "Consulta agendada com sucesso.";
-        return RedirectToAction(nameof(Index));
+        return RedirectToAction(nameof(Index), new { areaClinica = NormalizarAreaClinica(areaClinica) });
     }
 
     [HttpGet]
-    public IActionResult Reagendar([FromRoute] int id)
+    public IActionResult Reagendar([FromRoute] int id, [FromQuery] string? areaClinica = null)
     {
         var consulta = _consultas.ConsultarPorId(id);
         if (consulta is null)
@@ -72,7 +72,7 @@ public class ConsultaController : Controller
         if (consulta.Status != StatusConsulta.Agendada)
         {
             TempData["ConsultaErro"] = MensagemConsultaEncerrada;
-            return RedirectToAction(nameof(Atendimento), new { id });
+            return RedirectToAction(nameof(Atendimento), new { id, areaClinica = NormalizarAreaClinica(areaClinica) });
         }
 
         return View(nameof(Reagendar), new ConsultaReagendarViewModel
@@ -84,7 +84,8 @@ public class ConsultaController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public IActionResult Reagendar([FromRoute] int id, ConsultaReagendarViewModel formulario)
+    public IActionResult Reagendar([FromRoute] int id, ConsultaReagendarViewModel formulario,
+        [FromQuery] string? areaClinica = null)
     {
         var consulta = _consultas.ConsultarPorId(id);
         if (consulta is null)
@@ -96,7 +97,7 @@ public class ConsultaController : Controller
             {
                 _consultas.Reagendar(id, novaDataHora);
                 TempData["ConsultaMensagem"] = "Consulta reagendada com sucesso.";
-                return RedirectToAction(nameof(Index));
+                return RedirectToAction(nameof(Index), new { areaClinica = NormalizarAreaClinica(areaClinica) });
             }
             catch (RegraNegocioException ex)
             {
@@ -113,9 +114,10 @@ public class ConsultaController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public IActionResult Cancelar([FromRoute] int id)
+    public IActionResult Cancelar([FromRoute] int id, [FromQuery] string? areaClinica = null)
     {
-        return Encerrar(id, _consultas.Cancelar, nameof(Index), "Consulta cancelada com sucesso.");
+        return Encerrar(id, _consultas.Cancelar, nameof(Index), "Consulta cancelada com sucesso.",
+            new { areaClinica = NormalizarAreaClinica(areaClinica) });
     }
 
     [HttpGet]
@@ -125,18 +127,13 @@ public class ConsultaController : Controller
         if (consulta is null)
             return NotFound();
 
-        return View(nameof(Atendimento), new ConsultaAtendimentoViewModel
-        {
-            Consulta = MontarResumo(consulta),
-            Diagnostico = consulta.Diagnostico,
-            Procedimentos = consulta.Procedimentos,
-            Prescricao = consulta.Prescricao
-        });
+        return MostrarAtendimentoPersistido(consulta);
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public IActionResult Atendimento([FromRoute] int id, ConsultaAtendimentoViewModel formulario)
+    public IActionResult Atendimento([FromRoute] int id, ConsultaAtendimentoViewModel formulario,
+        [FromQuery] string? areaClinica = null)
     {
         var consulta = _consultas.ConsultarPorId(id);
         if (consulta is null)
@@ -149,7 +146,8 @@ public class ConsultaController : Controller
                 _consultas.RegistrarAtendimento(id, formulario.Diagnostico, formulario.Procedimentos,
                     formulario.Prescricao);
                 TempData["ConsultaMensagem"] = "Atendimento salvo com sucesso.";
-                return RedirectToAction(nameof(Atendimento), new { id });
+                return RedirectToAction(nameof(Atendimento),
+                    new { id, areaClinica = NormalizarAreaClinica(areaClinica) });
             }
             catch (RegraNegocioException ex)
             {
@@ -160,16 +158,34 @@ public class ConsultaController : Controller
             }
         }
 
+        if (consulta.Status != StatusConsulta.Agendada)
+        {
+            // Descarta os valores do POST e mantém os erros gerais do atendimento.
+            foreach (var chave in ModelState.Keys.Where(chave => chave.Length > 0).ToArray())
+                ModelState.Remove(chave);
+
+            return MostrarAtendimentoPersistido(consulta);
+        }
+
         formulario.Consulta = MontarResumo(consulta);
         return View(nameof(Atendimento), formulario);
     }
 
+    private IActionResult MostrarAtendimentoPersistido(Consulta consulta) =>
+        View(nameof(Atendimento), new ConsultaAtendimentoViewModel
+        {
+            Consulta = MontarResumo(consulta),
+            Diagnostico = consulta.Diagnostico,
+            Procedimentos = consulta.Procedimentos,
+            Prescricao = consulta.Prescricao
+        });
+
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public IActionResult Finalizar([FromRoute] int id)
+    public IActionResult Finalizar([FromRoute] int id, [FromQuery] string? areaClinica = null)
     {
         return Encerrar(id, _consultas.Finalizar, nameof(Atendimento), "Atendimento finalizado com sucesso.",
-            new { id });
+            new { id, areaClinica = NormalizarAreaClinica(areaClinica) });
     }
 
     [HttpGet]
@@ -208,6 +224,9 @@ public class ConsultaController : Controller
 
         return RedirectToAction(destino, valoresRota);
     }
+
+    private static string? NormalizarAreaClinica(string? areaClinica) =>
+        areaClinica == "veterinario" ? areaClinica : null;
 
     private bool PodeEditar(Consulta consulta)
     {

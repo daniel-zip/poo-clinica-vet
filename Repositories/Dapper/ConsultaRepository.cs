@@ -13,6 +13,7 @@ public class ConsultaRepository : IConsultaRepository
 {
     private const string FormatoDataHora = "yyyy-MM-dd HH:mm:ss";
     private const string MensagemConflito = "O veterinário já tem uma consulta agendada nesse horário.";
+    private const int SqliteConstraintForeignKey = 787;
     private const int SqliteConstraintUnique = 2067;
 
     private const string SelecionarConsultas = """
@@ -37,7 +38,7 @@ public class ConsultaRepository : IConsultaRepository
                     @Diagnostico, @Procedimentos, @Prescricao);
             """;
 
-        ExecutarGravacao(sql, new
+        var parametros = new
         {
             entidade.PetId,
             entidade.VeterinarioId,
@@ -48,7 +49,17 @@ public class ConsultaRepository : IConsultaRepository
             entidade.Diagnostico,
             entidade.Procedimentos,
             entidade.Prescricao
-        });
+        };
+
+        try
+        {
+            ExecutarGravacao(sql, parametros);
+        }
+        catch (SqliteException ex) when (ex.SqliteExtendedErrorCode == SqliteConstraintForeignKey)
+        {
+            throw new RegraNegocioException(
+                "O pet ou o veterinário selecionado deixou de estar disponível. Revise a seleção e tente novamente.");
+        }
     }
 
     public Consulta? ObterPorId(int id)
@@ -68,25 +79,69 @@ public class ConsultaRepository : IConsultaRepository
 
     public void Atualizar(Consulta entidade)
     {
-        const string sql = """
+        var alteracoes = new List<string>();
+        var valoresOriginais = new List<string>();
+        IncluirCampo(entidade.HorarioAlterado, "DataHora", "DataHoraOriginal");
+        IncluirCampo(entidade.DiagnosticoAlterado, "Diagnostico", "DiagnosticoOriginal");
+        IncluirCampo(entidade.ProcedimentosAlterados, "Procedimentos", "ProcedimentosOriginais");
+        IncluirCampo(entidade.PrescricaoAlterada, "Prescricao", "PrescricaoOriginal");
+        if (entidade.StatusAlterado)
+            alteracoes.Add("Status = @Status");
+
+        if (alteracoes.Count == 0)
+        {
+            ExigirConsultaAgendada(entidade.Id);
+            return;
+        }
+
+        // Somente fragmentos fixos compõem o SET. Os valores continuam parametrizados.
+        var sql = $"""
             UPDATE Consultas
-            SET DataHora = @DataHora, Status = @Status, Diagnostico = @Diagnostico,
-                Procedimentos = @Procedimentos, Prescricao = @Prescricao
-            WHERE Id = @Id AND Status = @Agendada;
+            SET {string.Join(", ", alteracoes)}
+            WHERE Id = @Id AND Status = @Agendada{string.Concat(valoresOriginais)};
             """;
 
         var linhasAfetadas = ExecutarGravacao(sql, new
         {
             entidade.Id,
             DataHora = FormatarDataHora(entidade.DataHora),
+            DataHoraOriginal = FormatarDataHora(entidade.DataHoraOriginal),
             Status = (int)entidade.Status,
             Agendada = (int)StatusConsulta.Agendada,
             entidade.Diagnostico,
+            entidade.DiagnosticoOriginal,
             entidade.Procedimentos,
-            entidade.Prescricao
+            entidade.ProcedimentosOriginais,
+            entidade.Prescricao,
+            entidade.PrescricaoOriginal
         });
 
         if (linhasAfetadas == 0)
+        {
+            ExigirConsultaAgendada(entidade.Id);
+            throw new RegraNegocioException("Os dados que você tentou alterar já foram atualizados. Reabra a consulta e revise as alterações antes de salvar.");
+        }
+
+        entidade.ConfirmarAtualizacao();
+
+        void IncluirCampo(bool alterado, string coluna, string parametroOriginal)
+        {
+            if (!alterado)
+                return;
+
+            alteracoes.Add($"{coluna} = @{coluna}");
+            // IS compara também os valores originais nulos no SQLite.
+            valoresOriginais.Add($" AND {coluna} IS @{parametroOriginal}");
+        }
+    }
+
+    private void ExigirConsultaAgendada(int id)
+    {
+        using var conexao = _connectionFactory.CriarConexao();
+        var agendada = conexao.ExecuteScalar<int>(
+            "SELECT EXISTS (SELECT 1 FROM Consultas WHERE Id = @Id AND Status = @Agendada);",
+            new { Id = id, Agendada = (int)StatusConsulta.Agendada });
+        if (agendada == 0)
             throw new RegraNegocioException("A consulta não foi encontrada ou já foi encerrada.");
     }
 
@@ -161,9 +216,17 @@ public class ConsultaRepository : IConsultaRepository
         public string? Procedimentos { get; set; }
         public string? Prescricao { get; set; }
 
-        public Consulta ParaConsulta() => new(
-            Id, PetId, VeterinarioId,
-            DateTime.ParseExact(DataHora, FormatoDataHora, CultureInfo.InvariantCulture),
-            (StatusConsulta)Status, QueixaInicial, Urgencia == 1, Diagnostico, Procedimentos, Prescricao);
+        public Consulta ParaConsulta()
+        {
+            if (!DateTime.TryParseExact(DataHora, FormatoDataHora, CultureInfo.InvariantCulture,
+                    DateTimeStyles.None, out var dataHora))
+            {
+                throw new InvalidDataException(
+                    $"DataHora inválida na consulta de ID {Id}. Formato esperado: {FormatoDataHora}.");
+            }
+
+            return new Consulta(Id, PetId, VeterinarioId, dataHora, (StatusConsulta)Status,
+                QueixaInicial, Urgencia == 1, Diagnostico, Procedimentos, Prescricao);
+        }
     }
 }
