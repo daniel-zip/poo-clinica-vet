@@ -3,32 +3,54 @@
     ViewData["Title"] = "Detalhes do tutor";
 }
 
-<section class="area-panel">
-    <h1>@Model.Nome</h1>
-    <dl>
-        <dt>CPF</dt>
-        <dd>@Model.Cpf</dd>
-        <dt>Telefone</dt>
-        <dd>@Model.Telefone</dd>
-    </dl>
+<section class="area-panel registro-listagem" aria-labelledby="titulo-tutor">
+    <header class="registro-cabecalho">
+        <h1 id="titulo-tutor">@Model.Nome</h1>
+        <div class="registro-botoes">
+            <a class="botao-secundario" asp-action="Index">Voltar à lista</a>
+            <a class="botao-primario" asp-action="Editar" asp-route-id="@Model.Id">Editar tutor</a>
+        </div>
+    </header>
 
-    <h2>Pets vinculados</h2>
-    @if (Model.Pets.Count == 0)
+    @if (TempData["TutorPetsMensagem"] is string mensagem)
     {
-        <p>Este tutor ainda não tem pets cadastrados.</p>
-    }
-    else
-    {
-        <ul>
-            @foreach (var pet in Model.Pets)
-            {
-                <li><a asp-controller="Pet" asp-action="Detalhes" asp-route-id="@pet.Id">@pet.Nome</a></li>
-            }
-        </ul>
+        <p class="registro-aviso" role="status">@mensagem</p>
     }
 
-    <div class="tutor-actions">
-        <a class="switch-button tutor-button" asp-action="Editar" asp-route-id="@Model.Id">Editar tutor</a>
-        <a asp-action="Index">Voltar à lista</a>
+    <div class="registro-painel">
+        <dl class="registro-dados">
+            <div>
+                <dt>CPF</dt>
+                <dd class="registro-contato">@FormatoContato.ExibirCpf(Model.Cpf)</dd>
+            </div>
+            <div>
+                <dt>Telefone</dt>
+                <dd class="registro-contato">@FormatoContato.ExibirTelefone(Model.Telefone)</dd>
+            </div>
+        </dl>
     </div>
+
+    <section class="registro-secao" aria-labelledby="pets-vinculados">
+        <header class="registro-cabecalho registro-cabecalho-secao">
+            <h2 id="pets-vinculados">Pets vinculados</h2>
+            <a class="botao-primario" asp-action="VincularPets" asp-route-id="@Model.Id">
+                <span aria-hidden="true">+</span> Vincular pets
+            </a>
+        </header>
+        @if (Model.Pets.Count == 0)
+        {
+            <p class="registro-vazio">Este tutor ainda não tem pets cadastrados.</p>
+        }
+        else
+        {
+            <ul class="registro-quadro registro-lista">
+                @foreach (var pet in Model.Pets)
+                {
+                    <li>
+                        <a asp-controller="Pet" asp-action="Detalhes" asp-route-id="@pet.Id">@pet.Nome</a>
+                    </li>
+                }
+            </ul>
+        }
+    </section>
 </section>

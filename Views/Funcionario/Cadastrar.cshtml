@@ -1,0 +1,60 @@
+@model VetCare.Models.ViewModels.Funcionario.CadastrarFuncionarioViewModel
+@{
+    ViewData["Title"] = "Cadastrar funcionário";
+}
+
+<section class="area-panel">
+    <header class="registro-cabecalho">
+        <div>
+            <h1>Cadastrar funcionário</h1>
+        </div>
+    </header>
+    <form class="registro-formulario" asp-action="Cadastrar" method="post">
+        <div asp-validation-summary="ModelOnly" class="registro-erro" role="alert"></div>
+
+        <div class="formulario-campo">
+            <label asp-for="Tipo">Cargo</label>
+            <select asp-for="Tipo" data-funcionario-cargo required>
+                <option value="">Selecione um cargo</option>
+                <option value="@nameof(Recepcionista)">Recepcionista</option>
+                <option value="@nameof(Veterinario)">Veterinário</option>
+                <option value="@nameof(Administrador)">Administrador</option>
+            </select>
+            <span asp-validation-for="Tipo" class="registro-erro"></span>
+        </div>
+
+        <partial name="_DadosFuncionario" model="Model" />
+
+        <fieldset data-campos-cargo="@nameof(Recepcionista)">
+            <legend>Dados de recepção</legend>
+            <div class="formulario-campo">
+                <label asp-for="Turno"></label>
+                <input asp-for="Turno" />
+                <span asp-validation-for="Turno" class="registro-erro"></span>
+            </div>
+        </fieldset>
+
+        <fieldset data-campos-cargo="@nameof(Veterinario)">
+            <legend>Dados veterinários</legend>
+            <div class="formulario-campo">
+                <label asp-for="Crmv"></label>
+                <input asp-for="Crmv" />
+                <span asp-validation-for="Crmv" class="registro-erro"></span>
+            </div>
+            <div class="formulario-campo">
+                <label asp-for="Especialidade"></label>
+                <input asp-for="Especialidade" />
+                <span asp-validation-for="Especialidade" class="registro-erro"></span>
+            </div>
+        </fieldset>
+
+        <div class="registro-botoes">
+            <button class="botao-primario" type="submit">Cadastrar funcionário</button>
+            <a class="botao-secundario" asp-action="Index">Cancelar</a>
+        </div>
+    </form>
+</section>
+
+@section Scripts {
+    <script src="~/js/funcionario-cadastro.js" asp-append-version="true" defer></script>
+}

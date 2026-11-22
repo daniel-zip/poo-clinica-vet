@@ -1,0 +1,8 @@
+@if (TempData["ConsultaMensagem"] is string mensagem)
+{
+    <p class="registro-aviso" role="status">@mensagem</p>
+}
+@if (TempData["ConsultaErro"] is string erro)
+{
+    <p class="registro-aviso registro-erro" role="alert">@erro</p>
+}

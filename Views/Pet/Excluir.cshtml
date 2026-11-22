@@ -2,13 +2,25 @@
 @{ ViewData["Title"] = "Excluir pet"; }
 
 <section class="area-panel">
-    <h1>Excluir pet</h1>
-    <p>Confirma a exclusão de <strong>@Model.Nome</strong>?</p>
-    <form asp-action="Excluir" asp-route-id="@Model.Id" method="post">
-        <div asp-validation-summary="ModelOnly" class="tutor-error" role="alert"></div>
-        <div class="tutor-actions">
-            <button class="switch-button" type="submit">Excluir pet</button>
-            <a asp-action="Index">Cancelar</a>
-        </div>
-    </form>
+    <header class="registro-cabecalho">
+        <h1>Excluir pet</h1>
+    </header>
+    <div class="registro-painel">
+        <p>Confirma a exclusão de <strong>@Model.Nome</strong>?</p>
+        <form asp-action="Excluir" asp-route-id="@Model.Id"
+              asp-route-tutorOrigemId="@ViewData["TutorOrigemId"]" method="post">
+            <div asp-validation-summary="ModelOnly" class="registro-erro" role="alert"></div>
+            <div class="registro-botoes">
+                @if (ViewData["TutorOrigemId"] is int tutorOrigemId)
+                {
+                    <a class="botao-secundario" asp-controller="Tutor" asp-action="Excluir" asp-route-id="@tutorOrigemId">Cancelar</a>
+                }
+                else
+                {
+                    <a class="botao-secundario" asp-action="Index">Cancelar</a>
+                }
+                <button class="botao-perigoso" type="submit">Excluir pet</button>
+            </div>
+        </form>
+    </div>
 </section>

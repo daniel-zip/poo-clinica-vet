@@ -1,4 +1,5 @@
 using global::Dapper;
+using Microsoft.Data.Sqlite;
 using VetCare.Data;
 using VetCare.Exceptions;
 using VetCare.Models;
@@ -81,21 +82,54 @@ public class PetRepository : IRepository<Pet>
             throw new RegraNegocioException("O pet ou um dos vínculos selecionados não está disponível.");
     }
 
-    public void Excluir(int id)
+    public int TransferirParaTutor(int tutorId, IReadOnlyDictionary<int, int> tutoresAtuais)
     {
+        if (tutoresAtuais.Count == 0)
+            throw new RegraNegocioException("Selecione pelo menos um pet.");
+
         const string sql = """
-            DELETE FROM Pets WHERE Id = @Id
-            AND NOT EXISTS (SELECT 1 FROM Consultas WHERE PetId = @Id);
+            UPDATE Pets
+            SET TutorId = @TutorId
+            WHERE Id = @PetId AND TutorId = @TutorAtualId AND TutorId <> @TutorId
+                AND EXISTS (SELECT 1 FROM Tutores WHERE Id = @TutorId);
             """;
 
         using var conexao = _connectionFactory.CriarConexao();
-        if (conexao.Execute(sql, new { Id = id }) == 0)
+        using var transacao = conexao.BeginTransaction();
+        var parametros = tutoresAtuais.Select(vinculo =>
+            new { TutorId = tutorId, PetId = vinculo.Key, TutorAtualId = vinculo.Value });
+        var alterados = conexao.Execute(sql, parametros, transacao);
+        if (alterados != tutoresAtuais.Count)
+            throw new RegraNegocioException("Um ou mais vínculos mudaram ou estão indisponíveis. Revise a seleção novamente.");
+
+        transacao.Commit();
+        return alterados;
+    }
+
+    public void Excluir(int id)
+    {
+        const string verificarTabelaConsultas = """
+            SELECT EXISTS (SELECT 1 FROM sqlite_schema WHERE type = 'table' AND name = 'Consultas' COLLATE NOCASE);
+            """;
+        const string excluirPet = "DELETE FROM Pets WHERE Id = @Id";
+
+        using var conexao = _connectionFactory.CriarConexao();
+        using var transacao = conexao.BeginTransaction(deferred: false);
+        var temTabelaConsultas = conexao.ExecuteScalar<int>(verificarTabelaConsultas, transaction: transacao) == 1;
+        var sql = temTabelaConsultas
+            ? excluirPet + " AND NOT EXISTS (SELECT 1 FROM Consultas WHERE PetId = @Id);"
+            : excluirPet + ";";
+
+        if (conexao.Execute(sql, new { Id = id }, transacao) == 0)
         {
-            var existe = conexao.ExecuteScalar<int>("SELECT COUNT(*) FROM Pets WHERE Id = @Id;", new { Id = id }) > 0;
+            var existe = conexao.ExecuteScalar<int>(
+                "SELECT COUNT(*) FROM Pets WHERE Id = @Id;", new { Id = id }, transacao) > 0;
             throw new RegraNegocioException(existe
                 ? "Não é possível excluir um pet com histórico de consultas."
                 : "O pet não foi encontrado.");
         }
+
+        transacao.Commit();
     }
 
     public Raca? ObterRacaPorId(int id)
@@ -140,6 +174,96 @@ public class PetRepository : IRepository<Pet>
         {
             throw new RegraNegocioException("Selecione uma espécie cadastrada.");
         }
+    }
+
+    public bool SugestoesDisponiveis()
+    {
+        using var conexao = _connectionFactory.CriarConexao();
+        return TemTabelaDeSugestoes(conexao);
+    }
+
+    public List<SugestaoCatalogo>? ListarSugestoes()
+    {
+        const string sql = """
+            SELECT s.Id, s.Nome, s.EspecieId, e.Nome AS EspecieNome
+            FROM SugestoesCatalogo s LEFT JOIN Especies e ON e.Id = s.EspecieId
+            ORDER BY s.Id;
+            """;
+
+        using var conexao = _connectionFactory.CriarConexao();
+        return TemTabelaDeSugestoes(conexao) ? conexao.Query<SugestaoCatalogo>(sql).ToList() : null;
+    }
+
+    public void SugerirItemCatalogo(string nome, int? especieId = null)
+    {
+        var nomeNormalizado = nome.Trim();
+        if (nomeNormalizado.Length == 0)
+            throw new RegraNegocioException("Informe o nome da sugestão.");
+
+        using var conexao = _connectionFactory.CriarConexao();
+        using var transacao = conexao.BeginTransaction();
+        VerificarFilaDeSugestoes(conexao, transacao);
+
+        if (especieId.HasValue && conexao.ExecuteScalar<int>(
+                "SELECT EXISTS (SELECT 1 FROM Especies WHERE Id = @EspecieId);",
+                new { EspecieId = especieId }, transacao) == 0)
+            throw new RegraNegocioException("Selecione uma espécie cadastrada.");
+
+        if (JaEstaNoCatalogo(conexao, transacao, nomeNormalizado, especieId))
+            throw new RegraNegocioException("Esse item já está no catálogo.");
+
+        var pendentes = conexao.Query<string>("SELECT Nome FROM SugestoesCatalogo WHERE EspecieId IS @EspecieId;",
+            new { EspecieId = especieId }, transacao);
+        if (pendentes.Contains(nomeNormalizado, StringComparer.OrdinalIgnoreCase))
+            throw new RegraNegocioException("Já existe uma sugestão pendente para esse item.");
+
+        conexao.Execute("INSERT INTO SugestoesCatalogo (Nome, EspecieId) VALUES (@Nome, @EspecieId);",
+            new { Nome = nomeNormalizado, EspecieId = especieId }, transacao);
+        transacao.Commit();
+    }
+
+    public bool AprovarSugestao(int id)
+    {
+        using var conexao = _connectionFactory.CriarConexao();
+        using var transacao = conexao.BeginTransaction();
+        VerificarFilaDeSugestoes(conexao, transacao);
+
+        var sugestao = conexao.QuerySingleOrDefault<SugestaoCatalogo>(
+            "SELECT Id, Nome, EspecieId FROM SugestoesCatalogo WHERE Id = @Id;", new { Id = id }, transacao)
+            ?? throw new RegraNegocioException("Esta sugestão não está mais pendente.");
+
+        var precisaInserir = !JaEstaNoCatalogo(conexao, transacao, sugestao.Nome, sugestao.EspecieId);
+        if (precisaInserir)
+        {
+            var sql = sugestao.EspecieId.HasValue
+                ? "INSERT INTO Racas (Nome, EspecieId) VALUES (@Nome, @EspecieId);"
+                : "INSERT INTO Especies (Nome) VALUES (@Nome);";
+            conexao.Execute(sql, new { sugestao.Nome, sugestao.EspecieId }, transacao);
+        }
+
+        conexao.Execute("DELETE FROM SugestoesCatalogo WHERE Id = @Id;", new { Id = id }, transacao);
+        transacao.Commit();
+        return precisaInserir;
+    }
+
+    private static bool TemTabelaDeSugestoes(SqliteConnection conexao, SqliteTransaction? transacao = null) =>
+        conexao.ExecuteScalar<int>("""
+            SELECT EXISTS (SELECT 1 FROM sqlite_schema WHERE type = 'table' AND name = 'SugestoesCatalogo' COLLATE NOCASE);
+            """, transaction: transacao) == 1;
+
+    private static void VerificarFilaDeSugestoes(SqliteConnection conexao, SqliteTransaction transacao)
+    {
+        if (!TemTabelaDeSugestoes(conexao, transacao))
+            throw new RegraNegocioException("A fila de sugestões ainda não foi configurada no banco de dados.");
+    }
+
+    private static bool JaEstaNoCatalogo(SqliteConnection conexao, SqliteTransaction transacao, string nome, int? especieId)
+    {
+        var sql = especieId.HasValue
+            ? "SELECT Nome FROM Racas WHERE EspecieId = @EspecieId;"
+            : "SELECT Nome FROM Especies;";
+        return conexao.Query<string>(sql, new { EspecieId = especieId }, transacao)
+            .Any(item => string.Equals(item.Trim(), nome, StringComparison.OrdinalIgnoreCase));
     }
 
     private static object Parametros(Pet pet) => new

@@ -9,6 +9,7 @@ public abstract class DadosFuncionarioViewModel
 
     [Display(Name = "CPF")]
     [Required(ErrorMessage = "Informe o CPF do funcionário.")]
+    [RegularExpression(FormatoContato.PadraoCpf, ErrorMessage = "Informe um CPF com 11 dígitos.")]
     public string Cpf { get; set; } = string.Empty;
 
     [Display(Name = "E-mail")]
@@ -16,6 +17,7 @@ public abstract class DadosFuncionarioViewModel
     public string Email { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Informe o telefone do funcionário.")]
+    [RegularExpression(FormatoContato.PadraoTelefone, ErrorMessage = "Informe o telefone com DDD e 10 ou 11 dígitos.")]
     public string Telefone { get; set; } = string.Empty;
 
     [Display(Name = "Endereço")]

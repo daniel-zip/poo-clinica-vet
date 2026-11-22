@@ -1,0 +1,33 @@
+@model VetCare.Models.ViewModels.Consulta.ConsultaHistoricoPorPetViewModel
+@{
+    ViewData["Title"] = "Histórico de consultas";
+    ViewData["MostrarPet"] = false;
+    var areaClinica = Context.Request.Query["areaClinica"] == "veterinario" ? "veterinario" : null;
+    ViewData["AreaClinica"] = areaClinica;
+}
+
+<section class="area-panel registro-listagem" aria-labelledby="titulo-historico">
+    <header class="registro-cabecalho">
+        <div>
+            <h1 id="titulo-historico">Histórico de consultas</h1>
+            <p>@Model.PetNome</p>
+        </div>
+        <div class="registro-botoes">
+            @if (areaClinica is not null)
+            {
+                <a asp-controller="Pet" asp-action="Index" asp-route-areaClinica="@areaClinica" class="botao-secundario">Ver outros pets</a>
+            }
+            <a asp-controller="Pet" asp-action="Detalhes" asp-route-id="@Model.PetId"
+               asp-route-areaClinica="@areaClinica" class="botao-secundario">Voltar à ficha</a>
+        </div>
+    </header>
+
+    @if (Model.Consultas.Count == 0)
+    {
+        <p class="registro-vazio">Este pet ainda não tem consultas registradas.</p>
+    }
+    else
+    {
+        <partial name="_TabelaConsultas" model="Model.Consultas" />
+    }
+</section>

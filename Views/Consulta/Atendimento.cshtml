@@ -1,0 +1,103 @@
+@model VetCare.Models.ViewModels.Consulta.ConsultaAtendimentoViewModel
+@using VetCare.Models.Enums
+@{
+    ViewData["Title"] = "Atendimento";
+    var consulta = Model.Consulta;
+    var agendada = consulta.Status == StatusConsulta.Agendada;
+    var areaClinica = Context.Request.Query["areaClinica"] == "veterinario" ? "veterinario" : null;
+    var agendaVeterinaria = Url.Action("Index", "Consulta", new { areaClinica = "veterinario" });
+}
+
+<section class="area-panel" aria-labelledby="titulo-atendimento">
+    <header class="registro-cabecalho">
+        <div>
+            <h1 id="titulo-atendimento">Atendimento</h1>
+            <p>@consulta.PetNome · @consulta.DataHora.ToString("dd/MM/yyyy HH:mm")</p>
+        </div>
+        <div class="registro-botoes">
+            <a asp-controller="Consulta" asp-action="Index" asp-route-areaClinica="@areaClinica"
+               class="botao-secundario" data-rota-veterinario="@agendaVeterinaria">Voltar à agenda</a>
+            <a asp-controller="Consulta" asp-action="HistoricoPorPet" asp-route-id="@consulta.PetId"
+               asp-route-areaClinica="@areaClinica" class="botao-secundario">Histórico do pet</a>
+            @if (agendada && areaClinica is null)
+            {
+                <a asp-controller="Consulta" asp-action="Reagendar" asp-route-id="@consulta.Id" class="botao-secundario" data-acao-recepcao>Reagendar</a>
+            }
+        </div>
+    </header>
+
+    <partial name="_Mensagens" />
+
+    <div class="registro-painel">
+        <dl class="registro-dados">
+            <div>
+                <dt>Pet</dt>
+                <dd><a asp-controller="Pet" asp-action="Detalhes" asp-route-id="@consulta.PetId" asp-route-areaClinica="@areaClinica">@consulta.PetNome</a></dd>
+            </div>
+            <div><dt>Veterinário</dt><dd>@consulta.VeterinarioNome</dd></div>
+            <div><dt>Status</dt><dd>@consulta.Status</dd></div>
+            <div><dt>Urgência</dt><dd>@(consulta.Urgencia ? "Sim" : "Não")</dd></div>
+            <div class="consulta-campo-largo">
+                <dt>Queixa inicial</dt>
+                <dd class="consulta-texto">@consulta.QueixaInicial</dd>
+            </div>
+        </dl>
+    </div>
+
+    <section class="registro-secao" aria-labelledby="dados-atendimento">
+        <h2 id="dados-atendimento">Dados do atendimento</h2>
+        @if (agendada)
+        {
+            <form class="registro-formulario" asp-controller="Consulta" asp-action="Atendimento" asp-route-id="@consulta.Id" method="post">
+                <div asp-validation-summary="ModelOnly" class="registro-erro" role="alert"></div>
+                <div class="formulario-campo consulta-campo-largo">
+                    <label asp-for="Diagnostico"></label>
+                    <textarea asp-for="Diagnostico" rows="3"></textarea>
+                    <span asp-validation-for="Diagnostico" class="registro-erro"></span>
+                </div>
+                <div class="formulario-campo consulta-campo-largo">
+                    <label asp-for="Procedimentos"></label>
+                    <textarea asp-for="Procedimentos" rows="3"></textarea>
+                    <span asp-validation-for="Procedimentos" class="registro-erro"></span>
+                </div>
+                <div class="formulario-campo consulta-campo-largo">
+                    <label asp-for="Prescricao"></label>
+                    <textarea asp-for="Prescricao" rows="3"></textarea>
+                    <span asp-validation-for="Prescricao" class="registro-erro"></span>
+                </div>
+                <div class="registro-botoes">
+                    <button type="submit" class="botao-primario">Salvar atendimento</button>
+                </div>
+            </form>
+
+            <div class="consulta-decisoes">
+                <details class="registro-painel" name="encerrar-consulta">
+                    <summary>Finalizar atendimento</summary>
+                    <p>Salve as alterações antes de finalizar. Depois da finalização, os dados ficam disponíveis para consulta.</p>
+                    <form asp-controller="Consulta" asp-action="Finalizar" asp-route-id="@consulta.Id" method="post">
+                        <button type="submit" class="botao-primario">Confirmar finalização</button>
+                    </form>
+                </details>
+                @if (areaClinica is null)
+                {
+                    <details id="cancelar-consulta" class="registro-painel" name="encerrar-consulta" data-acao-recepcao>
+                        <summary>Cancelar consulta</summary>
+                        <p>A consulta cancelada continua no histórico do pet.</p>
+                        <form asp-controller="Consulta" asp-action="Cancelar" asp-route-id="@consulta.Id" method="post">
+                            <button type="submit" class="botao-perigoso">Confirmar cancelamento</button>
+                        </form>
+                    </details>
+                }
+            </div>
+        }
+        else
+        {
+            <div asp-validation-summary="ModelOnly" class="registro-erro registro-aviso" role="alert"></div>
+            <dl class="registro-dados registro-painel">
+                <div><dt>Diagnóstico</dt><dd class="consulta-texto">@(string.IsNullOrWhiteSpace(Model.Diagnostico) ? "Não informado" : Model.Diagnostico)</dd></div>
+                <div><dt>Procedimentos</dt><dd class="consulta-texto">@(string.IsNullOrWhiteSpace(Model.Procedimentos) ? "Não informados" : Model.Procedimentos)</dd></div>
+                <div><dt>Prescrição</dt><dd class="consulta-texto">@(string.IsNullOrWhiteSpace(Model.Prescricao) ? "Não informada" : Model.Prescricao)</dd></div>
+            </dl>
+        }
+    </section>
+</section>

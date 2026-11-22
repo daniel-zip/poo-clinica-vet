@@ -1,0 +1,46 @@
+@model VetCare.Models.ViewModels.Tutor.VincularPetsViewModel
+@{
+    ViewData["Title"] = "Revisar vínculos";
+}
+
+<section class="area-panel registro-listagem" aria-labelledby="titulo-revisar">
+    <header class="registro-cabecalho">
+        <h1 id="titulo-revisar">Revisar vínculos</h1>
+    </header>
+
+    <p id="aviso-vinculos" class="registro-aviso">
+        Os pets abaixo já têm tutor. Ao confirmar, eles passarão para <strong>@Model.TutorNome</strong>.
+    </p>
+
+    <form asp-action="VincularPets" asp-route-id="@Model.TutorId" method="post" aria-describedby="aviso-vinculos">
+        @foreach (var pet in Model.Pets)
+        {
+            <input type="hidden" name="vinculos[@(pet.Id)]" value="@pet.TutorAtualId" />
+        }
+        <div class="registro-quadro" role="region" aria-label="Pets selecionados e seus tutores" tabindex="0">
+            <table class="registro-tabela">
+                <thead>
+                    <tr>
+                        <th scope="col">Pet</th>
+                        <th scope="col">Raça</th>
+                        <th scope="col">Tutor atual</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var pet in Model.Pets)
+                    {
+                        <tr>
+                            <th scope="row">@pet.Nome</th>
+                            <td>@pet.Raca</td>
+                            <td>@pet.TutorAtual</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <div class="registro-botoes pet-selecao-botoes">
+            <a class="botao-secundario" asp-action="VincularPets" asp-route-id="@Model.TutorId">Voltar à seleção</a>
+            <button class="botao-primario" type="submit">Confirmar transferência</button>
+        </div>
+    </form>
+</section>

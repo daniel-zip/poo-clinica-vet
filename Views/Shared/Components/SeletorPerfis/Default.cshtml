@@ -1,0 +1,35 @@
+@model IReadOnlyList<VetCare.ViewComponents.PerfilDemonstracao>
+
+<dialog id="escolher-perfil" aria-labelledby="titulo-perfis" aria-describedby="descricao-perfis"
+        data-administradores-ativos="@Model.Count(perfil => perfil.Area == "administracao")">
+    <div class="dialog-heading">
+        <h2 id="titulo-perfis">Trocar usuário</h2>
+        <form method="dialog">
+            <button class="close-button" type="submit" aria-label="Fechar" autofocus>×</button>
+        </form>
+    </div>
+    @if (Model.Count == 0)
+    {
+        <p id="descricao-perfis">Nenhum funcionário ativo disponível. Cadastre um funcionário em Administração.</p>
+    }
+    else
+    {
+        <p id="descricao-perfis">Escolha um funcionário ativo para a demonstração.</p>
+        <ul class="profile-list">
+            @foreach (var perfil in Model)
+            {
+                <li>
+                    <button class="profile-option" type="button" data-profile-id="@perfil.Id"
+                            data-profile-area="@perfil.Area" aria-pressed="false">
+                        <span class="avatar" aria-hidden="true">@perfil.Iniciais</span>
+                        <span class="profile-details">
+                            <strong>@perfil.Nome</strong>
+                            <span>@perfil.Cargo</span>
+                        </span>
+                        <span class="profile-current" aria-hidden="true">Atual</span>
+                    </button>
+                </li>
+            }
+        </ul>
+    }
+</dialog>

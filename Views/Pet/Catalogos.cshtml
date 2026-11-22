@@ -5,30 +5,35 @@
 }
 
 <div class="area-panel">
-    <h1>Catálogos</h1>
+    <header class="registro-cabecalho">
+        <h1>Catálogos</h1>
+        <a class="botao-secundario" asp-controller="Pet" asp-action="SugestoesCatalogo">Revisar sugestões</a>
+    </header>
     @if (TempData["CatalogosMensagem"] is string mensagem)
     {
-        <p role="status">@mensagem</p>
+        <p class="registro-aviso" role="status">@mensagem</p>
     }
 
-    <section aria-labelledby="especies">
+    <section class="registro-secao registro-catalogo" aria-labelledby="especies">
         <h2 id="especies">Espécies</h2>
-        <form asp-action="CadastrarEspecie" method="post">
-            <div class="tutor-field">
+        <form class="registro-formulario" asp-action="CadastrarEspecie" method="post">
+            <div class="formulario-campo">
                 <label asp-for="Especie.Nome"></label>
                 <input asp-for="Especie.Nome" required />
-                <span asp-validation-for="Especie.Nome" class="tutor-error"></span>
+                <span asp-validation-for="Especie.Nome" class="registro-erro"></span>
             </div>
-            <button class="switch-button" type="submit">Cadastrar espécie</button>
+            <div class="registro-botoes">
+                <button class="botao-primario" type="submit">Cadastrar espécie</button>
+            </div>
         </form>
 
         @if (Model.Especies.Count == 0)
         {
-            <p>Nenhuma espécie cadastrada.</p>
+            <p class="registro-vazio">Nenhuma espécie cadastrada.</p>
         }
         else
         {
-            <ul>
+            <ul class="registro-quadro registro-lista">
                 @foreach (var especie in Model.Especies)
                 {
                     <li>@especie.Nome</li>
@@ -37,21 +42,21 @@
         }
     </section>
 
-    <section aria-labelledby="racas">
+    <section class="registro-secao registro-catalogo" aria-labelledby="racas">
         <h2 id="racas">Raças</h2>
         @if (Model.Especies.Count == 0)
         {
-            <p>Cadastre uma espécie para poder adicionar raças.</p>
+            <p class="registro-aviso">Cadastre uma espécie para poder adicionar raças.</p>
         }
         else
         {
-            <form asp-action="CadastrarRaca" method="post">
-                <div class="tutor-field">
+            <form class="registro-formulario" asp-action="CadastrarRaca" method="post">
+                <div class="formulario-campo">
                     <label asp-for="Raca.Nome"></label>
                     <input asp-for="Raca.Nome" required />
-                    <span asp-validation-for="Raca.Nome" class="tutor-error"></span>
+                    <span asp-validation-for="Raca.Nome" class="registro-erro"></span>
                 </div>
-                <div class="tutor-field">
+                <div class="formulario-campo">
                     <label asp-for="Raca.EspecieId"></label>
                     <select asp-for="Raca.EspecieId" required>
                         <option value="">Selecione uma espécie</option>
@@ -60,24 +65,26 @@
                             <option value="@especie.Id">@especie.Nome</option>
                         }
                     </select>
-                    <span asp-validation-for="Raca.EspecieId" class="tutor-error"></span>
+                    <span asp-validation-for="Raca.EspecieId" class="registro-erro"></span>
                 </div>
-                <button class="switch-button" type="submit">Cadastrar raça</button>
+                <div class="registro-botoes">
+                    <button class="botao-primario" type="submit">Cadastrar raça</button>
+                </div>
             </form>
         }
 
         @if (Model.Racas.Count > 0)
         {
-            <ul>
+            <ul class="registro-quadro registro-lista">
                 @foreach (var raca in Model.Racas)
                 {
-                    <li>@raca.Nome (@especies[raca.EspecieId])</li>
+                    <li><strong>@raca.Nome</strong><span>@especies[raca.EspecieId]</span></li>
                 }
             </ul>
         }
         else
         {
-            <p>Nenhuma raça cadastrada.</p>
+            <p class="registro-vazio">Nenhuma raça cadastrada.</p>
         }
     </section>
 </div>

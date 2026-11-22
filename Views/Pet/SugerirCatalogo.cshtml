@@ -1,0 +1,68 @@
+@model VetCare.Models.ViewModels.Pet.SugestoesCatalogoViewModel
+@{
+    ViewData["Title"] = "Sugerir espécie ou raça";
+}
+
+<section class="area-panel" aria-labelledby="titulo-sugestao">
+    <header class="registro-cabecalho">
+        <h1 id="titulo-sugestao">Sugerir espécie ou raça</h1>
+    </header>
+
+    <partial name="_MensagensSugestao" />
+    <div asp-validation-summary="ModelOnly" class="registro-aviso registro-erro" role="alert"></div>
+
+    @if (!Model.Disponivel)
+    {
+        <p class="registro-vazio">A fila de sugestões ainda não está disponível.</p>
+    }
+    else
+    {
+        <p>O item passa a aparecer no cadastro de pets depois da aprovação da Administração.</p>
+
+        <section class="registro-secao" aria-labelledby="sugerir-especie">
+            <h2 id="sugerir-especie">Sugerir espécie</h2>
+            <form class="registro-formulario" asp-controller="Pet" asp-action="SugerirEspecie" method="post">
+                <div class="formulario-campo">
+                    <label asp-for="Especie.Nome"></label>
+                    <input asp-for="Especie.Nome" required />
+                    <span asp-validation-for="Especie.Nome" class="registro-erro"></span>
+                </div>
+                <div class="registro-botoes">
+                    <button class="botao-primario" type="submit">Enviar sugestão de espécie</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="registro-secao" aria-labelledby="sugerir-raca">
+            <h2 id="sugerir-raca">Sugerir raça</h2>
+            @if (Model.Especies.Count == 0)
+            {
+                <p class="registro-vazio">Para sugerir uma raça, a espécie precisa estar cadastrada.</p>
+            }
+            else
+            {
+                <form class="registro-formulario" asp-controller="Pet" asp-action="SugerirRaca" method="post">
+                    <div class="formulario-campo">
+                        <label asp-for="Raca.Nome"></label>
+                        <input asp-for="Raca.Nome" required />
+                        <span asp-validation-for="Raca.Nome" class="registro-erro"></span>
+                    </div>
+                    <div class="formulario-campo">
+                        <label asp-for="Raca.EspecieId"></label>
+                        <select asp-for="Raca.EspecieId" required>
+                            <option value="">Selecione uma espécie</option>
+                            @foreach (var especie in Model.Especies)
+                            {
+                                <option value="@especie.Id">@especie.Nome</option>
+                            }
+                        </select>
+                        <span asp-validation-for="Raca.EspecieId" class="registro-erro"></span>
+                    </div>
+                    <div class="registro-botoes">
+                        <button class="botao-primario" type="submit">Enviar sugestão de raça</button>
+                    </div>
+                </form>
+            }
+        </section>
+    }
+</section>

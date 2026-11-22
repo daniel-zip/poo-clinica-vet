@@ -3,11 +3,19 @@
     ViewData["Title"] = "Tutores";
 }
 
-<section class="area-panel">
-    <div class="tutor-heading">
-        <h1>Tutores</h1>
-        <a class="switch-button tutor-button" asp-action="Cadastrar">Cadastrar tutor</a>
-    </div>
+<section class="area-panel registro-listagem" aria-labelledby="titulo-tutores">
+    <header class="registro-cabecalho">
+        <div>
+            <h1 id="titulo-tutores">Tutores</h1>
+            @if (Model.Count > 0)
+            {
+                <p>@Model.Count @(Model.Count == 1 ? "tutor cadastrado" : "tutores cadastrados")</p>
+            }
+        </div>
+        <a class="botao-primario" asp-action="Cadastrar">
+            <span aria-hidden="true">+</span> Cadastrar tutor
+        </a>
+    </header>
 
     @if (TempData["TutorMensagem"] is string mensagem)
     {
@@ -15,17 +23,17 @@
     }
     @if (TempData["TutorErro"] is string erro)
     {
-        <p class="tutor-error" role="alert">@erro</p>
+        <p class="registro-erro" role="alert">@erro</p>
     }
 
     @if (Model.Count == 0)
     {
-        <p>Nenhum tutor cadastrado.</p>
+        <p class="registro-vazio">Nenhum tutor cadastrado.</p>
     }
     else
     {
-        <div class="tutor-table-wrap">
-            <table class="tutor-table">
+        <div class="registro-quadro" role="region" aria-label="Lista de tutores" tabindex="0">
+            <table class="registro-tabela">
                 <thead>
                     <tr>
                         <th scope="col">Nome</th>
@@ -38,13 +46,15 @@
                     @foreach (var tutor in Model)
                     {
                         <tr>
-                            <td>@tutor.Nome</td>
-                            <td>@tutor.Cpf</td>
-                            <td>@tutor.Telefone</td>
-                            <td class="tutor-actions">
-                                <a asp-action="Detalhes" asp-route-id="@tutor.Id" aria-label="Detalhes de @tutor.Nome">Detalhes</a>
-                                <a asp-action="Editar" asp-route-id="@tutor.Id" aria-label="Editar @tutor.Nome">Editar</a>
-                                <a asp-action="Excluir" asp-route-id="@tutor.Id" aria-label="Excluir @tutor.Nome">Excluir</a>
+                            <th scope="row">@tutor.Nome</th>
+                            <td class="registro-contato">@FormatoContato.ExibirCpf(tutor.Cpf)</td>
+                            <td class="registro-contato">@FormatoContato.ExibirTelefone(tutor.Telefone)</td>
+                            <td>
+                                <div class="registro-acoes">
+                                    <a asp-action="Detalhes" asp-route-id="@tutor.Id" aria-label="Detalhes de @tutor.Nome">Detalhes</a>
+                                    <a asp-action="Editar" asp-route-id="@tutor.Id" aria-label="Editar @tutor.Nome">Editar</a>
+                                    <a class="acao-perigosa" asp-action="Excluir" asp-route-id="@tutor.Id" aria-label="Excluir @tutor.Nome">Excluir</a>
+                                </div>
                             </td>
                         </tr>
                     }

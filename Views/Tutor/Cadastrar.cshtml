@@ -4,8 +4,12 @@
 }
 
 <section class="area-panel">
-    <h1>Cadastrar tutor</h1>
-    <form class="tutor-form" asp-action="Cadastrar" method="post">
+    <header class="registro-cabecalho">
+        <div>
+            <h1>Cadastrar tutor</h1>
+        </div>
+    </header>
+    <form class="registro-formulario" asp-action="Cadastrar" method="post">
         <partial name="_Formulario" model="Model" />
     </form>
 </section>

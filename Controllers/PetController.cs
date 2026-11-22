@@ -45,12 +45,13 @@ public class PetController : Controller
     }
 
     [HttpGet]
-    public IActionResult Editar(int id)
+    public IActionResult Editar(int id, int? tutorOrigemId)
     {
         var pet = _pets.ObterPorId(id);
         if (pet is null)
             return PetNaoEncontrado();
 
+        ViewData["TutorOrigemId"] = tutorOrigemId;
         return MostrarFormulario(nameof(Editar), new PetFormularioViewModel
         {
             Nome = pet.Nome, DataNascimento = pet.DataNascimento, Peso = pet.Peso,
@@ -60,17 +61,19 @@ public class PetController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public IActionResult Editar(int id, PetFormularioViewModel formulario)
+    public IActionResult Editar(int id, PetFormularioViewModel formulario, int? tutorOrigemId)
     {
         if (_pets.ObterPorId(id) is null)
             return PetNaoEncontrado();
 
-        return Salvar(nameof(Editar), id, formulario);
+        ViewData["TutorOrigemId"] = tutorOrigemId;
+        return Salvar(nameof(Editar), id, formulario, tutorOrigemId);
     }
 
     [HttpGet]
-    public IActionResult Excluir(int id)
+    public IActionResult Excluir(int id, int? tutorOrigemId)
     {
+        ViewData["TutorOrigemId"] = tutorOrigemId;
         var pet = _pets.ObterPorId(id);
         return pet is null ? PetNaoEncontrado() : View(pet);
     }
@@ -78,7 +81,7 @@ public class PetController : Controller
     [HttpPost]
     [ActionName(nameof(Excluir))]
     [ValidateAntiForgeryToken]
-    public IActionResult ConfirmarExclusao(int id)
+    public IActionResult ConfirmarExclusao(int id, int? tutorOrigemId)
     {
         var pet = _pets.ObterPorId(id);
         if (pet is null)
@@ -91,14 +94,15 @@ public class PetController : Controller
         catch (RegraNegocioException ex)
         {
             ModelState.AddModelError(string.Empty, ex.Message);
+            ViewData["TutorOrigemId"] = tutorOrigemId;
             return View(nameof(Excluir), pet);
         }
 
         TempData["PetMensagem"] = "Pet excluído com sucesso.";
-        return RedirectToAction(nameof(Index));
+        return VoltarAposSalvar(tutorOrigemId);
     }
 
-    private IActionResult Salvar(string view, int id, PetFormularioViewModel formulario)
+    private IActionResult Salvar(string view, int id, PetFormularioViewModel formulario, int? tutorOrigemId = null)
     {
         if (!ModelState.IsValid || formulario.DataNascimento is not DateTime nascimento ||
             formulario.Peso is not decimal peso || formulario.Sexo is not { } sexo ||
@@ -133,8 +137,12 @@ public class PetController : Controller
         }
 
         TempData["PetMensagem"] = id == 0 ? "Pet cadastrado com sucesso." : "Pet atualizado com sucesso.";
-        return RedirectToAction(nameof(Index));
+        return VoltarAposSalvar(tutorOrigemId);
     }
+
+    private RedirectToActionResult VoltarAposSalvar(int? tutorOrigemId) => tutorOrigemId is int id
+        ? RedirectToAction(nameof(TutorController.Excluir), "Tutor", new { id })
+        : RedirectToAction(nameof(Index));
 
     private IActionResult MostrarFormulario(string view, PetFormularioViewModel formulario, int id = 0)
     {
@@ -165,6 +173,54 @@ public class PetController : Controller
     public IActionResult Catalogos()
     {
         return MostrarCatalogos(new CatalogosViewModel());
+    }
+
+    [HttpGet("Recepcao/SugestoesCatalogo")]
+    public IActionResult SugerirCatalogo() => MostrarFormularioDeSugestao();
+
+    [HttpPost("Recepcao/SugestoesCatalogo/Especie")]
+    [ValidateAntiForgeryToken]
+    public IActionResult SugerirEspecie([Bind(Prefix = "Especie")] EspecieCadastroViewModel formulario)
+    {
+        if (ModelState.IsValid && EnviarSugestao(formulario.Nome))
+            return RedirectToAction(nameof(SugerirCatalogo));
+
+        return MostrarFormularioDeSugestao(especie: formulario);
+    }
+
+    [HttpPost("Recepcao/SugestoesCatalogo/Raca")]
+    [ValidateAntiForgeryToken]
+    public IActionResult SugerirRaca([Bind(Prefix = "Raca")] RacaCadastroViewModel formulario)
+    {
+        if (ModelState.IsValid && formulario.EspecieId is int especieId && EnviarSugestao(formulario.Nome, especieId))
+            return RedirectToAction(nameof(SugerirCatalogo));
+
+        return MostrarFormularioDeSugestao(raca: formulario);
+    }
+
+    [HttpGet("Administracao/Catalogos/Sugestoes")]
+    public IActionResult SugestoesCatalogo()
+    {
+        var pendentes = _pets.ListarSugestoes();
+        return View(new SugestoesCatalogoViewModel { Disponivel = pendentes is not null, Pendentes = pendentes ?? [] });
+    }
+
+    [HttpPost("Administracao/Catalogos/Sugestoes/{id:int}/Aprovar")]
+    [ValidateAntiForgeryToken]
+    public IActionResult AprovarSugestao([FromRoute] int id)
+    {
+        try
+        {
+            TempData["SugestaoMensagem"] = _pets.AprovarSugestao(id)
+                ? "Sugestão aprovada. O item já está disponível no catálogo."
+                : "O item já estava no catálogo. A sugestão foi concluída.";
+        }
+        catch (RegraNegocioException ex)
+        {
+            TempData["SugestaoErro"] = ex.Message;
+        }
+
+        return RedirectToAction(nameof(SugestoesCatalogo));
     }
 
     [HttpPost("Administracao/Catalogos/Especies")]
@@ -209,5 +265,32 @@ public class PetController : Controller
         formulario.Especies = _pets.ListarEspecies();
         formulario.Racas = _pets.ListarRacas();
         return View(nameof(Catalogos), formulario);
+    }
+
+    private IActionResult MostrarFormularioDeSugestao(EspecieCadastroViewModel? especie = null,
+        RacaCadastroViewModel? raca = null)
+    {
+        return View(nameof(SugerirCatalogo), new SugestoesCatalogoViewModel
+        {
+            Disponivel = _pets.SugestoesDisponiveis(),
+            Especie = especie ?? new(),
+            Raca = raca ?? new(),
+            Especies = _pets.ListarEspecies()
+        });
+    }
+
+    private bool EnviarSugestao(string nome, int? especieId = null)
+    {
+        try
+        {
+            _pets.SugerirItemCatalogo(nome, especieId);
+            TempData["SugestaoMensagem"] = "Sugestão enviada para revisão da Administração.";
+            return true;
+        }
+        catch (RegraNegocioException ex)
+        {
+            ModelState.AddModelError(string.Empty, ex.Message);
+            return false;
+        }
     }
 }

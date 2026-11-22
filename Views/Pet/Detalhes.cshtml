@@ -1,20 +1,38 @@
 @model VetCare.Models.ViewModels.Pet.PetResumoViewModel
 @using VetCare.Models.Enums
-@{ ViewData["Title"] = Model.Pet.Nome; }
+@{
+    ViewData["Title"] = Model.Pet.Nome;
+    var areaClinica = Context.Request.Query["areaClinica"] == "veterinario" ? "veterinario" : null;
+}
 
-<section class="area-panel">
-    <h1>@Model.Pet.Nome</h1>
-    <dl>
-        <dt>Tutor</dt><dd>@Model.Tutor</dd>
-        <dt>Espécie</dt><dd>@Model.Especie</dd>
-        <dt>Raça</dt><dd>@Model.Raca</dd>
-        <dt>Sexo</dt><dd>@(Model.Pet.Sexo == SexoPet.Femea ? "Fêmea" : "Macho")</dd>
-        <dt>Data de nascimento</dt><dd>@Model.Pet.DataNascimento.ToString("dd/MM/yyyy")</dd>
-        <dt>Idade em anos completos</dt><dd>@Model.Pet.CalcularIdade()</dd>
-        <dt>Peso</dt><dd>@Model.Pet.Peso kg</dd>
-    </dl>
-    <div class="tutor-actions">
-        <a class="switch-button" asp-action="Editar" asp-route-id="@Model.Pet.Id">Editar pet</a>
-        <a asp-action="Index">Voltar à lista</a>
+<section class="area-panel registro-listagem" aria-labelledby="titulo-pet">
+    <header class="registro-cabecalho">
+        <h1 id="titulo-pet">@Model.Pet.Nome</h1>
+        <div class="registro-botoes">
+            <a class="botao-secundario" asp-controller="Pet" asp-action="Index" asp-route-areaClinica="@areaClinica">Voltar à lista</a>
+            <a class="botao-secundario" asp-controller="Consulta" asp-action="HistoricoPorPet"
+               asp-route-id="@Model.Pet.Id" asp-route-areaClinica="@areaClinica">Histórico de consultas</a>
+            @if (areaClinica is null)
+            {
+                <a class="botao-secundario acao-perigosa" asp-controller="Pet" asp-action="Excluir"
+                   asp-route-id="@Model.Pet.Id" data-acao-recepcao>Excluir pet</a>
+                <a class="botao-primario" asp-controller="Pet" asp-action="Editar"
+                   asp-route-id="@Model.Pet.Id" data-acao-recepcao>Editar pet</a>
+            }
+        </div>
+    </header>
+    <div class="registro-painel">
+        <dl class="registro-dados">
+            <div>
+                <dt>Tutor</dt>
+                <dd><a asp-controller="Tutor" asp-action="Detalhes" asp-route-id="@Model.Pet.TutorId">@Model.Tutor</a></dd>
+            </div>
+            <div><dt>Espécie</dt><dd>@Model.Especie</dd></div>
+            <div><dt>Raça</dt><dd>@Model.Raca</dd></div>
+            <div><dt>Sexo</dt><dd>@(Model.Pet.Sexo == SexoPet.Femea ? "Fêmea" : "Macho")</dd></div>
+            <div><dt>Data de nascimento</dt><dd>@Model.Pet.DataNascimento.ToString("dd/MM/yyyy")</dd></div>
+            <div><dt>Idade em anos completos</dt><dd>@Model.Pet.CalcularIdade()</dd></div>
+            <div><dt>Peso</dt><dd>@Model.Pet.Peso kg</dd></div>
+        </dl>
     </div>
 </section>

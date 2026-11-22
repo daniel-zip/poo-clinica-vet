@@ -1,0 +1,76 @@
+@model VetCare.Models.ViewModels.Consulta.ConsultaAgendaViewModel
+@using VetCare.Models.Enums
+@{
+    var veterinario = Context.Request.Query["areaClinica"] == "veterinario";
+    var areaClinica = veterinario ? "veterinario" : null;
+    var statusInformado = Context.Request.Query["status"].ToString();
+    StatusConsulta? status = veterinario && Enum.TryParse<StatusConsulta>(statusInformado, out var filtro) && Enum.IsDefined(filtro)
+        ? filtro
+        : null;
+    var consultas = status.HasValue
+        ? Model.Consultas.Where(consulta => consulta.Status == status).ToList()
+        : Model.Consultas;
+    var titulo = veterinario ? "Agenda veterinária" : "Agenda de consultas";
+    ViewData["Title"] = titulo;
+    ViewData["AreaClinica"] = areaClinica;
+}
+
+<section class="area-panel registro-listagem" aria-labelledby="titulo-agenda">
+    <header class="registro-cabecalho">
+        <h1 id="titulo-agenda">@titulo</h1>
+        @if (!veterinario)
+        {
+            <a class="botao-primario" asp-controller="Consulta" asp-action="Agendar" data-acao-recepcao>
+                <span aria-hidden="true">+</span> Agendar consulta
+            </a>
+        }
+    </header>
+
+    <partial name="_Mensagens" />
+
+    <form class="registro-painel consulta-filtro" asp-controller="Consulta" asp-action="Index" method="get">
+        @if (veterinario)
+        {
+            <input type="hidden" name="areaClinica" value="@areaClinica" />
+        }
+        <div class="formulario-campo">
+            <label asp-for="Data">Data da consulta</label>
+            <input asp-for="Data" type="date" asp-format="{0:yyyy-MM-dd}" />
+            <span asp-validation-for="Data" class="registro-erro"></span>
+        </div>
+        @if (veterinario)
+        {
+            <div class="formulario-campo">
+                <label for="status-consulta">Status</label>
+                <select id="status-consulta" name="status">
+                    <option value="">Todos</option>
+                    @foreach (var opcao in Enum.GetValues<StatusConsulta>())
+                    {
+                        <option value="@opcao" selected="@(status == opcao)">@opcao</option>
+                    }
+                </select>
+            </div>
+        }
+        <div class="registro-botoes">
+            <button class="botao-secundario" type="submit">Filtrar</button>
+            @if (Model.Data.HasValue || status.HasValue || !ViewData.ModelState.IsValid)
+            {
+                <a class="botao-secundario" asp-controller="Consulta" asp-action="Index" asp-route-areaClinica="@areaClinica">Limpar filtros</a>
+            }
+        </div>
+    </form>
+
+    @if (ViewData.ModelState.IsValid)
+    {
+        <div class="consulta-resultados">
+            @if (consultas.Count == 0)
+            {
+                <p class="registro-vazio">@(Model.Data.HasValue || status.HasValue ? "Nenhuma consulta corresponde aos filtros." : "Nenhuma consulta agendada ou registrada.")</p>
+            }
+            else
+            {
+                <partial name="_TabelaConsultas" model="consultas" />
+            }
+        </div>
+    }
+</section>

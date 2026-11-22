@@ -1,0 +1,57 @@
+@model VetCare.Models.ViewModels.Tutor.VincularPetsViewModel
+@{
+    ViewData["Title"] = "Vincular pets";
+}
+
+<section class="area-panel registro-listagem" aria-labelledby="titulo-vincular">
+    <header class="registro-cabecalho">
+        <div>
+            <h1 id="titulo-vincular">Vincular pets</h1>
+            <p>Novo tutor: <strong>@Model.TutorNome</strong></p>
+        </div>
+        <a class="botao-secundario" asp-action="Detalhes" asp-route-id="@Model.TutorId">Voltar à ficha</a>
+    </header>
+
+    <div asp-validation-summary="ModelOnly" class="registro-erro registro-aviso" role="alert"></div>
+
+    @if (Model.Pets.Count == 0)
+    {
+        <p class="registro-vazio">Não há outros pets cadastrados para vincular.</p>
+    }
+    else
+    {
+        <p id="instrucao-vincular">Selecione um ou mais pets para revisar os vínculos antes de confirmar.</p>
+        <form asp-action="RevisarVinculos" asp-route-id="@Model.TutorId" method="post" aria-describedby="instrucao-vincular">
+            <div class="registro-quadro" role="region" aria-label="Pets disponíveis" tabindex="0">
+                <table class="registro-tabela">
+                    <thead>
+                        <tr>
+                            <th scope="col">Pet</th>
+                            <th scope="col">Raça</th>
+                            <th scope="col">Tutor atual</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var pet in Model.Pets)
+                        {
+                            <tr>
+                                <th scope="row">
+                                    <label class="pet-selecao">
+                                        <input type="checkbox" name="petIds" value="@pet.Id"
+                                               checked="@Model.Selecionados.Contains(pet.Id)" />
+                                        @pet.Nome
+                                    </label>
+                                </th>
+                                <td>@pet.Raca</td>
+                                <td>@pet.TutorAtual</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="registro-botoes pet-selecao-botoes">
+                <button class="botao-primario" type="submit">Revisar vínculos</button>
+            </div>
+        </form>
+    }
+</section>

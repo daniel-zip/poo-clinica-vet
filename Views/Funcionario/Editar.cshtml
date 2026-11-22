@@ -1,0 +1,49 @@
+@model VetCare.Models.ViewModels.Funcionario.EditarFuncionarioViewModel
+@{
+    ViewData["Title"] = "Editar funcionário";
+    var tipo = ViewData["Tipo"] as string;
+    var id = ViewData["FuncionarioId"];
+    var cargo = tipo == nameof(Veterinario) ? "Veterinário" : tipo;
+}
+
+<section class="area-panel">
+    <header class="registro-cabecalho">
+        <div>
+            <h1>Editar funcionário</h1>
+
+            <p>Cargo: <strong>@cargo</strong></p>
+        </div>
+    </header>
+    <form class="registro-formulario" asp-action="Editar" asp-route-id="@id" method="post">
+        <div asp-validation-summary="ModelOnly" class="registro-erro" role="alert"></div>
+        <partial name="_DadosFuncionario" model="Model" />
+
+        @if (tipo == nameof(Recepcionista))
+        {
+            <div class="formulario-campo">
+                <label asp-for="Turno"></label>
+                <input asp-for="Turno" required />
+                <span asp-validation-for="Turno" class="registro-erro"></span>
+            </div>
+        }
+
+        @if (tipo == nameof(Veterinario))
+        {
+            <div class="formulario-campo">
+                <label asp-for="Crmv"></label>
+                <input asp-for="Crmv" required />
+                <span asp-validation-for="Crmv" class="registro-erro"></span>
+            </div>
+            <div class="formulario-campo">
+                <label asp-for="Especialidade"></label>
+                <input asp-for="Especialidade" required />
+                <span asp-validation-for="Especialidade" class="registro-erro"></span>
+            </div>
+        }
+
+        <div class="registro-botoes">
+            <button class="botao-primario" type="submit">Salvar alterações</button>
+            <a class="botao-secundario" asp-action="Detalhes" asp-route-id="@id">Cancelar</a>
+        </div>
+    </form>
+</section>

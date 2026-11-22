@@ -2,8 +2,18 @@
 @{ ViewData["Title"] = "Editar pet"; }
 
 <section class="area-panel">
-    <h1>Editar pet</h1>
-    <form class="tutor-form" asp-action="Editar" asp-route-id="@ViewData["PetId"]" method="post">
+    <header class="registro-cabecalho">
+        <div>
+            <h1>Editar pet</h1>
+
+            @if (ViewData["TutorOrigemId"] is int)
+            {
+                <p>Selecione o novo tutor no campo Tutor e salve.</p>
+            }
+        </div>
+    </header>
+    <form class="registro-formulario" asp-action="Editar" asp-route-id="@ViewData["PetId"]"
+          asp-route-tutorOrigemId="@ViewData["TutorOrigemId"]" method="post">
         <partial name="_Formulario" model="Model" />
     </form>
 </section>

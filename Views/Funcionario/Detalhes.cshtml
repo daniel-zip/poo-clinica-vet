@@ -1,0 +1,103 @@
+@model Funcionario
+@using VetCare.Models.Enums
+@{
+    ViewData["Title"] = "Detalhes do funcionário";
+    var cargo = Model switch
+    {
+        Veterinario => "Veterinário",
+        Recepcionista => "Recepcionista",
+        Administrador => "Administrador",
+        _ => Model.GetType().Name
+    };
+    var operacoes = ViewData["Operacoes"] as IReadOnlyDictionary<Operacao, bool>;
+    var reativacaoDisponivel = ViewData["ReativacaoDisponivel"] is true;
+}
+
+<section class="area-panel registro-listagem" aria-labelledby="titulo-funcionario">
+    <header class="registro-cabecalho">
+        <h1 id="titulo-funcionario">@Model.Nome</h1>
+        <div class="registro-botoes">
+            <a class="botao-secundario" asp-action="Index">Voltar à lista</a>
+            @if (Model.Ativo)
+            {
+                <a class="botao-secundario acao-perigosa" asp-action="Desativar" asp-route-id="@Model.Id">Desativar</a>
+            }
+            else if (reativacaoDisponivel)
+            {
+                <form asp-controller="Funcionario" asp-action="Reativar" asp-route-id="@Model.Id" method="post">
+                    <button class="botao-secundario" type="submit">Reativar funcionário</button>
+                </form>
+            }
+            else
+            {
+                <button class="botao-secundario" type="button" disabled>Reativar funcionário</button>
+            }
+            <a class="botao-primario" asp-action="Editar" asp-route-id="@Model.Id">Editar funcionário</a>
+        </div>
+    </header>
+
+    @if (!Model.Ativo && !reativacaoDisponivel)
+    {
+        <p class="registro-aviso">A reativação ainda não está disponível.</p>
+    }
+
+    @if (TempData["FuncionarioMensagem"] is string mensagem)
+    {
+        <p class="registro-aviso" role="status">@mensagem</p>
+    }
+    @if (TempData["FuncionarioErro"] is string erro)
+    {
+        <p class="registro-aviso registro-erro" role="alert">@erro</p>
+    }
+
+    <div class="registro-painel">
+        <dl class="registro-dados">
+            <div><dt>Cargo</dt><dd>@cargo</dd></div>
+            <div><dt>Situação</dt><dd>@(Model.Ativo ? "Ativo" : "Desativado")</dd></div>
+            <div><dt>CPF</dt><dd class="registro-contato">@FormatoContato.ExibirCpf(Model.Cpf)</dd></div>
+            <div><dt>E-mail</dt><dd>@Model.Email</dd></div>
+            <div><dt>Telefone</dt><dd class="registro-contato">@FormatoContato.ExibirTelefone(Model.Telefone)</dd></div>
+            <div><dt>Endereço</dt><dd>@Model.Endereco</dd></div>
+            <div>
+                <dt>Salário</dt>
+                <dd>@Model.Salario.ToString("C", System.Globalization.CultureInfo.GetCultureInfo("pt-BR"))</dd>
+            </div>
+            @if (Model is Recepcionista recepcionista)
+            {
+                <div><dt>Turno</dt><dd>@recepcionista.Turno</dd></div>
+            }
+            @if (Model is Veterinario veterinario)
+            {
+                <div><dt>CRMV</dt><dd>@veterinario.Crmv</dd></div>
+                <div><dt>Especialidade</dt><dd>@veterinario.Especialidade</dd></div>
+            }
+        </dl>
+    </div>
+
+    <section class="registro-secao" aria-labelledby="areas-do-cargo">
+        <h2 id="areas-do-cargo">Áreas do cargo na demonstração</h2>
+        @if (operacoes is not null && operacoes.Count > 0)
+        {
+            <dl class="registro-dados registro-painel">
+                @foreach (var (operacao, permitido) in operacoes)
+                {
+                    var area = operacao switch
+                    {
+                        Operacao.AcessarRecepcao => "Recepção",
+                        Operacao.AcessarVeterinario => "Veterinário",
+                        Operacao.AcessarAdministracao => "Administração",
+                        _ => operacao.ToString()
+                    };
+                    <div>
+                        <dt>@area</dt>
+                        <dd>@(permitido ? "Disponível" : "Indisponível")</dd>
+                    </div>
+                }
+            </dl>
+        }
+        else
+        {
+            <p class="registro-vazio">Nenhuma área disponível para exibição.</p>
+        }
+    </section>
+</section>

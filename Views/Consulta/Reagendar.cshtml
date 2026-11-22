@@ -1,0 +1,37 @@
+@model VetCare.Models.ViewModels.Consulta.ConsultaReagendarViewModel
+@using VetCare.Models.Enums
+@{
+    ViewData["Title"] = "Reagendar consulta";
+}
+
+<section class="area-panel" aria-labelledby="titulo-reagendar">
+    <header class="registro-cabecalho">
+        <div>
+            <h1 id="titulo-reagendar">Reagendar consulta</h1>
+            <p>@Model.Consulta.PetNome · @Model.Consulta.VeterinarioNome</p>
+        </div>
+    </header>
+
+    <p class="registro-aviso">Horário atual: <strong>@Model.Consulta.DataHora.ToString("dd/MM/yyyy HH:mm")</strong></p>
+
+    <form class="registro-formulario" asp-controller="Consulta" asp-action="Reagendar" asp-route-id="@Model.Consulta.Id" method="post">
+        <div asp-validation-summary="ModelOnly" class="registro-erro" role="alert"></div>
+        @if (Model.Consulta.Status == StatusConsulta.Agendada)
+        {
+            <div class="formulario-campo">
+                <label asp-for="NovaDataHora"></label>
+                <input asp-for="NovaDataHora" type="datetime-local" asp-format="{0:yyyy-MM-ddTHH:mm}"
+                       step="1800" aria-describedby="intervalo-reagendar" required />
+                <small id="intervalo-reagendar">Use horários nos minutos 00 ou 30.</small>
+                <span asp-validation-for="NovaDataHora" class="registro-erro"></span>
+            </div>
+        }
+        <div class="registro-botoes">
+            <a asp-controller="Consulta" asp-action="Index" class="botao-secundario">Voltar à agenda</a>
+            @if (Model.Consulta.Status == StatusConsulta.Agendada)
+            {
+                <button type="submit" class="botao-primario">Salvar novo horário</button>
+            }
+        </div>
+    </form>
+</section>

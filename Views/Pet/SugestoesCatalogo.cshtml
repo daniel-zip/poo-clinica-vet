@@ -1,0 +1,52 @@
+@model VetCare.Models.ViewModels.Pet.SugestoesCatalogoViewModel
+@{
+    ViewData["Title"] = "Sugestões de catálogo";
+}
+
+<section class="area-panel registro-listagem" aria-labelledby="titulo-sugestoes">
+    <header class="registro-cabecalho">
+        <h1 id="titulo-sugestoes">Sugestões de catálogo</h1>
+        <a class="botao-secundario" asp-controller="Pet" asp-action="Catalogos">Voltar aos catálogos</a>
+    </header>
+
+    <partial name="_MensagensSugestao" />
+
+    @if (!Model.Disponivel)
+    {
+        <p class="registro-vazio">A fila de sugestões ainda não está disponível.</p>
+    }
+    else if (Model.Pendentes.Count == 0)
+    {
+        <p class="registro-vazio">Nenhuma sugestão pendente.</p>
+    }
+    else
+    {
+        <div class="registro-quadro" role="region" aria-label="Sugestões pendentes" tabindex="0">
+            <table class="registro-tabela">
+                <thead>
+                    <tr>
+                        <th scope="col">Nome sugerido</th>
+                        <th scope="col">Tipo</th>
+                        <th scope="col">Espécie da raça</th>
+                        <th scope="col">Ação</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var sugestao in Model.Pendentes)
+                    {
+                        <tr>
+                            <th scope="row">@sugestao.Nome</th>
+                            <td>@(sugestao.EspecieId.HasValue ? "Raça" : "Espécie")</td>
+                            <td>@(sugestao.EspecieNome ?? "—")</td>
+                            <td>
+                                <form asp-controller="Pet" asp-action="AprovarSugestao" asp-route-id="@sugestao.Id" method="post">
+                                    <button class="botao-secundario" type="submit" aria-label="Aprovar @sugestao.Nome">Aprovar</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>

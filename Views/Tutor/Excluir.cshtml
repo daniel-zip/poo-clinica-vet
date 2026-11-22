@@ -4,14 +4,49 @@
 }
 
 <section class="area-panel">
-    <h1>Excluir tutor</h1>
-    <p>Confirma a exclusão de <strong>@Model.Nome</strong>?</p>
+    <header class="registro-cabecalho">
+        <h1>Excluir tutor</h1>
+    </header>
+    @if (TempData["PetMensagem"] is string mensagem)
+    {
+        <p class="registro-aviso" role="status">@mensagem</p>
+    }
+    <div asp-validation-summary="ModelOnly" class="registro-erro" role="alert"></div>
 
-    <form asp-action="Excluir" asp-route-id="@Model.Id" method="post">
-        <div asp-validation-summary="ModelOnly" class="tutor-error" role="alert"></div>
-        <div class="tutor-actions">
-            <button class="switch-button" type="submit">Excluir tutor</button>
-            <a asp-action="Index">Cancelar</a>
+    @if (Model.Pets.Count > 0)
+    {
+        <p class="registro-aviso"><strong>@Model.Nome</strong> só pode ser excluído quando não tiver pets vinculados.</p>
+        <section class="registro-secao" aria-labelledby="pets-vinculados">
+            <h2 id="pets-vinculados">Pets vinculados</h2>
+            <ul class="registro-quadro registro-lista">
+                @foreach (var pet in Model.Pets)
+                {
+                    <li>
+                        <a asp-controller="Pet" asp-action="Detalhes" asp-route-id="@pet.Id">@pet.Nome</a>
+                        <div class="registro-acoes">
+                            <a asp-controller="Pet" asp-action="Editar" asp-route-id="@pet.Id"
+                               asp-route-tutorOrigemId="@Model.Id" aria-label="Trocar tutor de @pet.Nome">Trocar tutor</a>
+                            <a class="acao-perigosa" asp-controller="Pet" asp-action="Excluir" asp-route-id="@pet.Id"
+                               asp-route-tutorOrigemId="@Model.Id" aria-label="Excluir pet @pet.Nome">Excluir pet</a>
+                        </div>
+                    </li>
+                }
+            </ul>
+            <div class="registro-botoes">
+                <a class="botao-secundario" asp-action="Index">Voltar à lista</a>
+            </div>
+        </section>
+    }
+    else
+    {
+        <div class="registro-painel">
+            <p>Confirma a exclusão de <strong>@Model.Nome</strong>?</p>
+            <form asp-action="Excluir" asp-route-id="@Model.Id" method="post">
+                <div class="registro-botoes">
+                    <a class="botao-secundario" asp-action="Index">Cancelar</a>
+                    <button class="botao-perigoso" type="submit">Excluir tutor</button>
+                </div>
+            </form>
         </div>
-    </form>
+    }
 </section>

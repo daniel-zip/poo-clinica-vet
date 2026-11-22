@@ -1,0 +1,36 @@
+@model Funcionario
+@{
+    ViewData["Title"] = "Desativar funcionário";
+}
+
+<section class="area-panel">
+    <header class="registro-cabecalho">
+        <h1>Desativar funcionário</h1>
+    </header>
+    <div class="registro-painel">
+        <div asp-validation-summary="ModelOnly" class="registro-erro" role="alert"></div>
+
+        @if (Model.Ativo && ViewData.ModelState.IsValid)
+        {
+            <p>Confirma a desativação de <strong>@Model.Nome</strong>? O cadastro será mantido como desativado.</p>
+
+            <p class="registro-aviso registro-erro" data-aviso-desativacao hidden role="alert"></p>
+            <form asp-controller="Funcionario" asp-action="Desativar" asp-route-id="@Model.Id" method="post"
+                  data-desativacao-alvo="@Model.Id" data-alvo-administrador="@(Model is Administrador ? "true" : "false")">
+                <input type="hidden" name="administradorId" data-administrador-desativacao />
+                <div class="registro-botoes">
+                    <a class="botao-secundario" asp-controller="Funcionario" asp-action="Detalhes" asp-route-id="@Model.Id">Cancelar</a>
+                    <button class="botao-perigoso" type="submit" disabled>Confirmar desativação</button>
+                </div>
+            </form>
+        }
+        else
+        {
+            @if (ViewData.ModelState.IsValid)
+            {
+                <p><strong>@Model.Nome</strong> já está desativado.</p>
+            }
+            <a class="botao-secundario" asp-controller="Funcionario" asp-action="Detalhes" asp-route-id="@Model.Id">Voltar à ficha</a>
+        }
+    </div>
+</section>

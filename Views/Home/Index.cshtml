@@ -5,6 +5,9 @@
     var tutores = Url.Action("Index", "Tutor");
     var pets = Url.Action("Index", "Pet");
     var catalogos = Url.Action("Catalogos", "Pet");
+    var sugerirCatalogo = Url.Action("SugerirCatalogo", "Pet");
+    var agendaVeterinaria = Url.Action("Index", "Consulta", new { areaClinica = "veterinario" });
+    var historicoVeterinario = Url.Action("Index", "Pet", new { areaClinica = "veterinario" });
 }
 
 <section class="area-panel" data-area-panel="recepcao" hidden>
@@ -23,17 +26,25 @@
             @if (consultas is not null) { <a href="@consultas">Agendamentos</a> }
             else { <span>Agendamentos <small>Em desenvolvimento</small></span> }
         </li>
+        @if (sugerirCatalogo is not null)
+        {
+            <li><a href="@sugerirCatalogo">Sugerir espécie ou raça</a></li>
+        }
     </ul>
 </section>
 
 <section class="area-panel" data-area-panel="veterinario" hidden>
     <h1>Veterinário</h1>
-    <p>Consulte a agenda e acompanhe os atendimentos.</p>
+    <p>Consulte os horários, registre atendimentos e acompanhe o histórico dos pets.</p>
     <ul class="module-list">
         <li>
-            @if (consultas is not null) { <a href="@consultas">Agenda e atendimentos</a> }
+            @if (agendaVeterinaria is not null) { <a href="@agendaVeterinaria">Agenda e atendimentos</a> }
             else { <span>Agenda e atendimentos <small>Em desenvolvimento</small></span> }
         </li>
+        @if (historicoVeterinario is not null)
+        {
+            <li><a href="@historicoVeterinario">Histórico por pet</a></li>
+        }
     </ul>
 </section>
 

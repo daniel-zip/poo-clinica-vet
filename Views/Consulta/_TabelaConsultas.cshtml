@@ -1,0 +1,56 @@
+@model IReadOnlyList<VetCare.Models.ViewModels.Consulta.ConsultaResumoViewModel>
+@using VetCare.Models.Enums
+@{
+    var mostrarPet = ViewData["MostrarPet"] is not false;
+    var areaClinica = ViewData["AreaClinica"] as string;
+}
+
+<div class="registro-quadro" role="region" aria-label="Lista de consultas" tabindex="0">
+    <table class="registro-tabela">
+        <thead>
+            <tr>
+                <th scope="col">Data e horário</th>
+                @if (mostrarPet)
+                {
+                    <th scope="col">Pet</th>
+                }
+                <th scope="col">Veterinário</th>
+                <th scope="col">Status</th>
+                <th scope="col">Urgência</th>
+                <th scope="col">Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var consulta in Model)
+            {
+                <tr>
+                    <th scope="row" class="registro-contato">
+                        <time datetime="@consulta.DataHora.ToString("yyyy-MM-ddTHH:mm")">@consulta.DataHora.ToString("dd/MM/yyyy HH:mm")</time>
+                    </th>
+                    @if (mostrarPet)
+                    {
+                        <td><a asp-controller="Pet" asp-action="Detalhes" asp-route-id="@consulta.PetId" asp-route-areaClinica="@areaClinica">@consulta.PetNome</a></td>
+                    }
+                    <td>@consulta.VeterinarioNome</td>
+                    <td>@consulta.Status</td>
+                    <td>@(consulta.Urgencia ? "Sim" : "Não")</td>
+                    <td>
+                        <div class="registro-acoes">
+                            <a asp-controller="Consulta" asp-action="Atendimento" asp-route-id="@consulta.Id" asp-route-areaClinica="@areaClinica"
+                               aria-label="Atendimento de @consulta.PetNome em @consulta.DataHora.ToString("dd/MM/yyyy HH:mm")">
+                                @(consulta.Status == StatusConsulta.Agendada ? "Atendimento" : "Ver atendimento")
+                            </a>
+                            @if (consulta.Status == StatusConsulta.Agendada && areaClinica is null)
+                            {
+                                <a asp-controller="Consulta" asp-action="Reagendar" asp-route-id="@consulta.Id" data-acao-recepcao
+                                   aria-label="Reagendar consulta de @consulta.PetNome em @consulta.DataHora.ToString("dd/MM/yyyy HH:mm")">Reagendar</a>
+                                <a class="acao-perigosa" asp-controller="Consulta" asp-action="Atendimento" asp-route-id="@consulta.Id" asp-fragment="cancelar-consulta" data-acao-recepcao
+                                   aria-label="Cancelar consulta de @consulta.PetNome em @consulta.DataHora.ToString("dd/MM/yyyy HH:mm")">Cancelar</a>
+                            }
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

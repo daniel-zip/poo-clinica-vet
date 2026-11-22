@@ -33,12 +33,66 @@ public class TutorController : Controller
             return TutorNaoEncontrado();
         }
 
-        foreach (var pet in _pets.ListarPorTutor(id))
+        CarregarPets(tutor);
+        return View(tutor);
+    }
+
+    [HttpGet]
+    public IActionResult VincularPets(int id)
+    {
+        var tutor = _tutores.ObterPorId(id);
+        return tutor is null ? TutorNaoEncontrado() : View(MontarSelecaoDePets(tutor, []));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public IActionResult RevisarVinculos(int id, [FromForm] int[] petIds)
+    {
+        var tutor = _tutores.ObterPorId(id);
+        if (tutor is null)
+            return TutorNaoEncontrado();
+
+        var selecao = MontarSelecaoDePets(tutor, petIds);
+        var pets = selecao.Pets.Where(pet => selecao.Selecionados.Contains(pet.Id)).ToList();
+        if (!ModelState.IsValid || pets.Count != selecao.Selecionados.Count)
         {
-            tutor.AdicionarPet(pet);
+            ModelState.AddModelError(string.Empty, "Revise a seleção de pets.");
+            return View(nameof(VincularPets), selecao);
+        }
+        if (pets.Count == 0)
+        {
+            ModelState.AddModelError(string.Empty, "Selecione pelo menos um pet.");
+            return View(nameof(VincularPets), selecao);
         }
 
-        return View(tutor);
+        return View(selecao with { Pets = pets });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public IActionResult VincularPets(int id, [FromForm] Dictionary<int, int> vinculos)
+    {
+        var tutor = _tutores.ObterPorId(id);
+        if (tutor is null)
+            return TutorNaoEncontrado();
+
+        try
+        {
+            if (!ModelState.IsValid)
+                throw new RegraNegocioException("Revise a seleção de pets.");
+
+            var total = _pets.TransferirParaTutor(id, vinculos);
+            TempData["TutorPetsMensagem"] = total == 1
+                ? "Pet vinculado com sucesso."
+                : $"{total} pets vinculados com sucesso.";
+        }
+        catch (RegraNegocioException ex)
+        {
+            ModelState.AddModelError(string.Empty, ex.Message);
+            return View(nameof(VincularPets), MontarSelecaoDePets(tutor, vinculos.Keys));
+        }
+
+        return RedirectToAction(nameof(Detalhes), new { id });
     }
 
     [HttpGet]
@@ -128,6 +182,7 @@ public class TutorController : Controller
             return TutorNaoEncontrado();
         }
 
+        CarregarPets(tutor);
         return View(tutor);
     }
 
@@ -149,11 +204,34 @@ public class TutorController : Controller
         catch (RegraNegocioException ex)
         {
             ModelState.AddModelError(string.Empty, ex.Message);
+            CarregarPets(tutor);
             return View(nameof(Excluir), tutor);
         }
 
         TempData["TutorMensagem"] = "Tutor excluído com sucesso.";
         return RedirectToAction(nameof(Index));
+    }
+
+    private VincularPetsViewModel MontarSelecaoDePets(Tutor tutor, IEnumerable<int> selecionados)
+    {
+        var nomesTutores = _tutores.Listar().ToDictionary(item => item.Id, item => item.Nome);
+        var nomesRacas = _pets.ListarRacas().ToDictionary(item => item.Id, item => item.Nome);
+        var disponiveis = _pets.Listar()
+            .Where(pet => pet.TutorId != tutor.Id)
+            .Select(pet => new PetDisponivelViewModel(pet.Id, pet.Nome, pet.TutorId,
+                nomesRacas.GetValueOrDefault(pet.RacaId, "—"),
+                nomesTutores.GetValueOrDefault(pet.TutorId, "—")))
+            .ToList();
+
+        return new VincularPetsViewModel(tutor.Id, tutor.Nome, disponiveis, selecionados.ToHashSet());
+    }
+
+    private void CarregarPets(Tutor tutor)
+    {
+        foreach (var pet in _pets.ListarPorTutor(tutor.Id))
+        {
+            tutor.AdicionarPet(pet);
+        }
     }
 
     private IActionResult TutorNaoEncontrado()

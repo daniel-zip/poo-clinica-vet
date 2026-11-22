@@ -1,23 +1,38 @@
 @model IReadOnlyList<VetCare.Models.ViewModels.Pet.PetResumoViewModel>
-@{ ViewData["Title"] = "Pets"; }
+@{
+    var areaClinica = Context.Request.Query["areaClinica"] == "veterinario" ? "veterinario" : null;
+    var titulo = areaClinica is not null ? "Histórico por pet" : "Pets";
+    ViewData["Title"] = titulo;
+}
 
-<section class="area-panel">
-    <div class="tutor-heading">
-        <h1>Pets</h1>
-        <a class="switch-button tutor-button" asp-action="Cadastrar">Cadastrar pet</a>
-    </div>
+<section class="area-panel registro-listagem" aria-labelledby="titulo-pets">
+    <header class="registro-cabecalho">
+        <div>
+            <h1 id="titulo-pets">@titulo</h1>
+            @if (Model.Count > 0)
+            {
+                <p>@Model.Count @(Model.Count == 1 ? "pet cadastrado" : "pets cadastrados")</p>
+            }
+        </div>
+        @if (areaClinica is null)
+        {
+            <a class="botao-primario" asp-controller="Pet" asp-action="Cadastrar" data-acao-recepcao>
+                <span aria-hidden="true">+</span> Cadastrar pet
+            </a>
+        }
+    </header>
 
     @if (TempData["PetMensagem"] is string mensagem) { <p role="status">@mensagem</p> }
-    @if (TempData["PetErro"] is string erro) { <p class="tutor-error" role="alert">@erro</p> }
+    @if (TempData["PetErro"] is string erro) { <p class="registro-erro" role="alert">@erro</p> }
 
     @if (Model.Count == 0)
     {
-        <p>Nenhum pet cadastrado.</p>
+        <p class="registro-vazio">Nenhum pet cadastrado.</p>
     }
     else
     {
-        <div class="tutor-table-wrap">
-            <table class="tutor-table">
+        <div class="registro-quadro" role="region" aria-label="Lista de pets" tabindex="0">
+            <table class="registro-tabela">
                 <thead>
                     <tr><th scope="col">Nome</th><th scope="col">Tutor</th><th scope="col">Espécie e raça</th><th scope="col">Ações</th></tr>
                 </thead>
@@ -25,12 +40,26 @@
                     @foreach (var item in Model)
                     {
                         <tr>
-                            <td><a asp-action="Detalhes" asp-route-id="@item.Pet.Id">@item.Pet.Nome</a></td>
+                            <th scope="row">@item.Pet.Nome</th>
                             <td>@item.Tutor</td>
                             <td>@item.Especie · @item.Raca</td>
-                            <td class="tutor-actions">
-                                <a asp-action="Editar" asp-route-id="@item.Pet.Id" aria-label="Editar @item.Pet.Nome">Editar</a>
-                                <a asp-action="Excluir" asp-route-id="@item.Pet.Id" aria-label="Excluir @item.Pet.Nome">Excluir</a>
+                            <td>
+                                <div class="registro-acoes">
+                                    <a asp-controller="Pet" asp-action="Detalhes" asp-route-id="@item.Pet.Id"
+                                       asp-route-areaClinica="@areaClinica" aria-label="Detalhes de @item.Pet.Nome">Detalhes</a>
+                                    @if (areaClinica is not null)
+                                    {
+                                        <a asp-controller="Consulta" asp-action="HistoricoPorPet" asp-route-id="@item.Pet.Id"
+                                           asp-route-areaClinica="@areaClinica" aria-label="Histórico de @item.Pet.Nome">Ver histórico</a>
+                                    }
+                                    else
+                                    {
+                                        <a asp-controller="Pet" asp-action="Editar" asp-route-id="@item.Pet.Id"
+                                           aria-label="Editar @item.Pet.Nome" data-acao-recepcao>Editar</a>
+                                        <a class="acao-perigosa" asp-controller="Pet" asp-action="Excluir" asp-route-id="@item.Pet.Id"
+                                           aria-label="Excluir @item.Pet.Nome" data-acao-recepcao>Excluir</a>
+                                    }
+                                </div>
                             </td>
                         </tr>
                     }

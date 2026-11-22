@@ -4,8 +4,12 @@
 }
 
 <section class="area-panel">
-    <h1>Editar tutor</h1>
-    <form class="tutor-form" asp-action="Editar" asp-route-id="@ViewData["TutorId"]" method="post">
+    <header class="registro-cabecalho">
+        <div>
+            <h1>Editar tutor</h1>
+        </div>
+    </header>
+    <form class="registro-formulario" asp-action="Editar" asp-route-id="@ViewData["TutorId"]" method="post">
         <partial name="_Formulario" model="Model" />
     </form>
 </section>
