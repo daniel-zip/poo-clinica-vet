@@ -61,6 +61,27 @@ CREATE TABLE IF NOT EXISTS Funcionarios (
     )
 );
 
+-- INICIO DDL CONSULTAS
+CREATE TABLE Consultas (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    PetId INTEGER NOT NULL,
+    VeterinarioId INTEGER NOT NULL,
+    DataHora TEXT NOT NULL,
+    Status INTEGER NOT NULL CHECK (Status IN (0, 1, 2)),
+    QueixaInicial TEXT NOT NULL,
+    Urgencia INTEGER NOT NULL CHECK (Urgencia IN (0, 1)),
+    Diagnostico TEXT NULL,
+    Procedimentos TEXT NULL,
+    Prescricao TEXT NULL,
+    FOREIGN KEY (PetId) REFERENCES Pets(Id),
+    FOREIGN KEY (VeterinarioId) REFERENCES Funcionarios(Id)
+);
+
+CREATE UNIQUE INDEX UX_Consultas_Veterinario_DataHora_Agendada
+ON Consultas (VeterinarioId, DataHora)
+WHERE Status = 0;
+-- FIM DDL CONSULTAS
+
 INSERT INTO Tutores (Id, Nome, CPF, Telefone)
 SELECT 1, 'Ana Ribeiro', '12345678901', '(16) 99111-0001'
 WHERE NOT EXISTS (SELECT 1 FROM Tutores WHERE Id = 1);
@@ -161,3 +182,15 @@ WHERE NOT EXISTS (SELECT 1 FROM Funcionarios WHERE Id = 5);
 INSERT INTO Funcionarios (Id, Tipo, Nome, Cpf, Email, Telefone, Endereco, Salario, NivelAcesso, Turno, Crmv, Especialidade, Ativo)
 SELECT 6, 'Administrador', 'Ricardo Teixeira', '66677788899', 'ricardo.teixeira@vetcare.test', '(16) 99222-0006', 'Avenida Brasil, 600', 7800.0, 3, NULL, NULL, NULL, 0
 WHERE NOT EXISTS (SELECT 1 FROM Funcionarios WHERE Id = 6);
+
+INSERT INTO Consultas (PetId, VeterinarioId, DataHora, Status, QueixaInicial, Urgencia,
+                       Diagnostico, Procedimentos, Prescricao)
+VALUES
+    (1, 3, '2026-11-10 09:00:00', 2, 'Avaliação de rotina.', 0,
+     'Sem alterações no exame clínico.', 'Exame físico e pesagem.', NULL),
+    (3, 4, '2026-11-12 14:30:00', 2, 'Coceira recorrente.', 0,
+     'Irritação cutânea leve.', 'Exame dermatológico.', 'Reavaliação em sete dias.'),
+    (2, 3, '2026-11-18 10:00:00', 1, 'Retorno para revisão.', 0, NULL, NULL, NULL),
+    (4, 3, '2026-12-01 08:30:00', 0, 'Diminuição do apetite.', 1, NULL, NULL, NULL),
+    (5, 3, '2026-12-01 09:00:00', 0, 'Avaliação de rotina.', 0, NULL, NULL, NULL),
+    (8, 4, '2026-12-01 14:30:00', 0, 'Descamação na pele.', 0, NULL, NULL, NULL);

@@ -1,6 +1,7 @@
 using VetCare.Models;
 using VetCare.Repositories.Dapper;
 using VetCare.Repositories.Interfaces;
+using VetCare.Services;
 
 namespace VetCare.Data;
 
@@ -16,6 +17,8 @@ public static class ServiceCollectionExtensions
             provider.GetRequiredService<PetRepository>());
 
         services.AddScoped<IRepository<Funcionario>, FuncionarioRepository>();
+        services.AddScoped<IConsultaRepository, ConsultaRepository>();
+        services.AddScoped<ConsultaService>();
 
         return services;
     }
