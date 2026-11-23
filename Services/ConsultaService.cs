@@ -30,6 +30,12 @@ public class ConsultaService
 
     public Consulta? ConsultarPorId(int id) => _consultas.ObterPorId(id);
 
+    public List<string> ListarHorariosOcupados(int veterinarioId, DateTime data)
+    {
+        ValidarVeterinario(veterinarioId);
+        return _consultas.ListarHorariosOcupados(veterinarioId, data);
+    }
+
     public void Agendar(int petId, int veterinarioId, DateTime dataHora, string queixaInicial, bool urgencia)
     {
         var consulta = new Consulta(petId, veterinarioId, dataHora, queixaInicial, urgencia);
@@ -75,13 +81,18 @@ public class ConsultaService
     {
         if (_pets.ObterPorId(consulta.PetId) is null)
             throw new RegraNegocioException("Selecione um pet cadastrado.");
-        if (_funcionarios.ObterPorId(consulta.VeterinarioId) is not Veterinario)
+        ValidarVeterinario(consulta.VeterinarioId);
+    }
+
+    private void ValidarVeterinario(int veterinarioId)
+    {
+        if (_funcionarios.ObterPorId(veterinarioId) is not Veterinario)
             throw new RegraNegocioException("Selecione um veterinário cadastrado.");
     }
 
     private void VerificarDisponibilidade(Consulta consulta, int? consultaIdIgnorada = null)
     {
         if (_consultas.ExisteConflitoHorario(consulta.VeterinarioId, consulta.DataHora, consultaIdIgnorada))
-            throw new RegraNegocioException("O veterinário já tem uma consulta agendada nesse horário.");
+            throw new RegraNegocioException("O veterinário já tem uma consulta nesse horário.");
     }
 }

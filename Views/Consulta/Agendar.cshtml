@@ -2,6 +2,7 @@
 @{
     ViewData["Title"] = "Agendar consulta";
     var temOpcoes = Model.Pets.Count > 0 && Model.Veterinarios.Count > 0;
+    var navegacao = NavegacaoAgenda.DaConsulta(Context.Request.Query);
 }
 
 <section class="area-panel" aria-labelledby="titulo-agendar">
@@ -18,7 +19,8 @@
         <p class="registro-aviso">É preciso ter um veterinário cadastrado para agendar a consulta.</p>
     }
 
-    <form class="registro-formulario" asp-controller="Consulta" asp-action="Agendar" method="post">
+    <form class="registro-formulario" asp-controller="Consulta" asp-action="Agendar"
+          asp-all-route-data="navegacao.ParaConsulta()" method="post">
         <div asp-validation-summary="ModelOnly" class="registro-erro" role="alert"></div>
         <div class="formulario-campo">
             <label asp-for="PetId"></label>
@@ -29,18 +31,12 @@
         </div>
         <div class="formulario-campo">
             <label asp-for="VeterinarioId"></label>
-            <select asp-for="VeterinarioId" asp-items="Model.Veterinarios" required>
+            <select asp-for="VeterinarioId" asp-items="Model.Veterinarios" data-consulta-veterinario required>
                 <option value="">Selecione um veterinário</option>
             </select>
             <span asp-validation-for="VeterinarioId" class="registro-erro"></span>
         </div>
-        <div class="formulario-campo">
-            <label asp-for="DataHora"></label>
-            <input asp-for="DataHora" type="datetime-local" asp-format="{0:yyyy-MM-ddTHH:mm}"
-                   step="1800" aria-describedby="intervalo-agendar" required />
-            <small id="intervalo-agendar">Use horários nos minutos 00 ou 30.</small>
-            <span asp-validation-for="DataHora" class="registro-erro"></span>
-        </div>
+        @Html.EditorFor(model => model.DataHora, "HorarioConsulta")
         <div class="formulario-campo">
             <label asp-for="QueixaInicial"></label>
             <textarea asp-for="QueixaInicial" rows="3" required></textarea>
@@ -53,8 +49,13 @@
             </label>
         </div>
         <div class="registro-botoes">
-            <a asp-controller="Consulta" asp-action="Index" class="botao-secundario">Voltar à agenda</a>
+            <a asp-controller="Consulta" asp-action="Index" asp-all-route-data="navegacao.ParaAgenda()"
+               class="botao-secundario">Voltar à agenda</a>
             <button type="submit" class="botao-primario" disabled="@(!temOpcoes)">Agendar consulta</button>
         </div>
     </form>
 </section>
+
+@section Scripts {
+    <script src="~/js/consulta-horario.js" asp-append-version="true" defer></script>
+}

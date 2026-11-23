@@ -13,7 +13,8 @@
         </div>
     </header>
     <form class="registro-formulario" asp-action="Editar" asp-route-id="@ViewData["PetId"]"
-          asp-route-tutorOrigemId="@ViewData["TutorOrigemId"]" method="post">
+          asp-route-tutorOrigemId="@ViewData["TutorOrigemId"]"
+          asp-route-origem="@(ViewData["VoltarFicha"] is true ? "ficha" : null)" method="post">
         <partial name="_Formulario" model="Model" />
     </form>
 </section>

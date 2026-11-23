@@ -3,7 +3,7 @@
     ViewData["Title"] = "Tutores";
 }
 
-<section class="area-panel registro-listagem" aria-labelledby="titulo-tutores">
+<section class="area-panel registro-listagem" aria-labelledby="titulo-tutores" data-lista-filtravel>
     <header class="registro-cabecalho">
         <div>
             <h1 id="titulo-tutores">Tutores</h1>
@@ -12,9 +12,13 @@
                 <p>@Model.Count @(Model.Count == 1 ? "tutor cadastrado" : "tutores cadastrados")</p>
             }
         </div>
-        <a class="botao-primario" asp-action="Cadastrar">
-            <span aria-hidden="true">+</span> Cadastrar tutor
-        </a>
+        <div class="registro-botoes">
+            <a class="botao-secundario" asp-controller="Home" asp-action="Index"
+               asp-fragment="recepcao">Voltar à Recepção</a>
+            <a class="botao-primario" asp-action="Cadastrar">
+                <span aria-hidden="true">+</span> Cadastrar tutor
+            </a>
+        </div>
     </header>
 
     @if (TempData["TutorMensagem"] is string mensagem)
@@ -32,6 +36,7 @@
     }
     else
     {
+        <partial name="_FiltrosLista" model='new FiltrosListaViewModel("tutores", "Nome, CPF ou telefone")' />
         <div class="registro-quadro" role="region" aria-label="Lista de tutores" tabindex="0">
             <table class="registro-tabela">
                 <thead>
@@ -45,7 +50,7 @@
                 <tbody>
                     @foreach (var tutor in Model)
                     {
-                        <tr>
+                        <tr data-lista-item="@tutor.Nome" data-lista-numeros="@($"{tutor.Cpf}|{tutor.Telefone}")">
                             <th scope="row">@tutor.Nome</th>
                             <td class="registro-contato">@FormatoContato.ExibirCpf(tutor.Cpf)</td>
                             <td class="registro-contato">@FormatoContato.ExibirTelefone(tutor.Telefone)</td>

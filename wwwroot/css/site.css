@@ -224,7 +224,7 @@ button, a[href] { cursor: pointer; }
 }
 .formulario-campo { display: grid; align-content: start; gap: 0.35rem; min-width: 0; }
 .formulario-campo label { font-size: 0.875rem; font-weight: 650; }
-.formulario-campo input, .formulario-campo select, .formulario-campo textarea {
+.formulario-campo input, .formulario-campo select, .formulario-campo textarea, .consulta-data-botao {
     width: 100%;
     min-height: 2.75rem;
     padding: 0.55rem 0.7rem;
@@ -237,6 +237,10 @@ button, a[href] { cursor: pointer; }
 .formulario-campo textarea { resize: vertical; }
 .formulario-campo small { color: var(--muted); }
 .formulario-campo .input-validation-error { border-color: var(--danger); }
+.campo-moeda { position: relative; }
+.campo-moeda span { position: absolute; inset-inline-start: 0.75rem; top: 50%; transform: translateY(-50%); color: var(--muted); }
+.campo-moeda input { width: 100%; }
+.campo-moeda input[type="text"] { padding-inline-start: 2.5rem; }
 .registro-formulario > :is(fieldset, p, .registro-erro, .registro-botoes) { grid-column: 1 / -1; }
 .registro-formulario > p { margin: 0; }
 .registro-formulario fieldset {
@@ -265,6 +269,17 @@ button, a[href] { cursor: pointer; }
 }
 .registro-catalogo { display: grid; gap: 0.85rem; }
 .registro-catalogo h2 { margin-bottom: 0; }
+.registro-filtros {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 0.75rem 1rem;
+    margin-bottom: 0.85rem;
+}
+.registro-filtros .formulario-campo { flex: 1 1 9rem; max-width: 20rem; }
+.registro-filtros .registro-filtro-busca { flex-basis: 14rem; }
+.area-panel .registro-filtro-resultado { margin: 0 0 0.75rem; }
+.area-panel .registro-filtro-resultado:empty { margin: 0; }
 
 .consulta-filtro {
     display: flex;
@@ -273,6 +288,37 @@ button, a[href] { cursor: pointer; }
     gap: 0.75rem 1rem;
 }
 .consulta-filtro .registro-botoes { margin-top: 1.55rem; }
+.consulta-selecao-horario { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 0.75rem; }
+.consulta-data-botao { display: flex; justify-content: space-between; align-items: center; gap: 0.4rem; text-align: left; }
+.consulta-data-botao::after { content: "▾"; color: var(--accent); }
+.consulta-data-botao:disabled, [data-consulta-horario]:disabled { opacity: 0.65; cursor: not-allowed; }
+.consulta-data-botao[aria-invalid="true"] { border-color: var(--danger); }
+.consulta-calendario { width: min(23rem, calc(100% - 1.5rem)); }
+.consulta-calendario-nav { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; margin: 0.85rem 0 0.65rem; }
+.consulta-calendario-nav strong { text-transform: capitalize; text-align: center; }
+.consulta-calendario-semana, .consulta-calendario-dias {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 0.2rem;
+    text-align: center;
+}
+.consulta-calendario-semana { margin-bottom: 0.25rem; color: var(--muted); font-size: 0.75rem; }
+.consulta-calendario-dia {
+    min-height: 2.2rem;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 0.35rem;
+    background: var(--surface);
+    color: inherit;
+    font-variant-numeric: tabular-nums;
+}
+.consulta-calendario-dia:hover:not(:disabled) { background: var(--soft); }
+.consulta-calendario-dia[aria-pressed="true"], .consulta-calendario-dia[aria-pressed="true"]:hover {
+    background: var(--accent);
+    color: white;
+}
+.consulta-calendario-dia:disabled { background: #edf1ee; color: #66786e; cursor: not-allowed; }
+.consulta-calendario-nav button:disabled { opacity: 0.55; cursor: not-allowed; }
 .consulta-resultados, .consulta-decisoes { margin-top: 1rem; }
 .consulta-campo-largo { grid-column: 1 / -1; }
 .consulta-texto { white-space: pre-wrap; }
@@ -324,7 +370,11 @@ dialog::backdrop { background: rgb(14 39 31 / 60%); }
 .dialog-heading + p { margin: 0.55rem 0 1rem; color: var(--muted); }
 .close-button { font-size: 1.15rem; line-height: 1; }
 
+.profile-filters { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.75rem; }
+.profile-filters button { flex: 1 0 auto; justify-content: center; padding-inline: 0.5rem; font-size: 0.82rem; }
+.profile-filters button[aria-pressed="true"] { border-color: var(--accent); background: var(--soft); }
 .profile-list { display: grid; gap: 0.55rem; }
+.profile-empty { margin: 0; }
 .profile-option {
     display: flex;
     align-items: center;

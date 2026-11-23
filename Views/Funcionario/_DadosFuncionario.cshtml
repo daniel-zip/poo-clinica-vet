@@ -27,6 +27,10 @@
 </div>
 <div class="formulario-campo">
     <label asp-for="Salario"></label>
-    <input asp-for="Salario" type="number" min="0" step="0.01" required />
+    <div class="campo-moeda">
+        <span aria-hidden="true" data-salario-prefixo hidden>R$</span>
+        <input asp-for="Salario" type="number" min="0" step="0.01" data-salario
+               data-separador-decimal="@System.Globalization.CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator" required />
+    </div>
     <span asp-validation-for="Salario" class="registro-erro"></span>
 </div>

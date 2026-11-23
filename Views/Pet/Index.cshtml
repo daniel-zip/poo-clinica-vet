@@ -5,7 +5,7 @@
     ViewData["Title"] = titulo;
 }
 
-<section class="area-panel registro-listagem" aria-labelledby="titulo-pets">
+<section class="area-panel registro-listagem" aria-labelledby="titulo-pets" data-lista-filtravel>
     <header class="registro-cabecalho">
         <div>
             <h1 id="titulo-pets">@titulo</h1>
@@ -14,12 +14,18 @@
                 <p>@Model.Count @(Model.Count == 1 ? "pet cadastrado" : "pets cadastrados")</p>
             }
         </div>
-        @if (areaClinica is null)
-        {
-            <a class="botao-primario" asp-controller="Pet" asp-action="Cadastrar" data-acao-recepcao>
-                <span aria-hidden="true">+</span> Cadastrar pet
+        <div class="registro-botoes">
+            <a class="botao-secundario" asp-controller="Home" asp-action="Index"
+               asp-fragment="@(areaClinica ?? "recepcao")">
+                @(areaClinica is null ? "Voltar à Recepção" : "Voltar à área Veterinário")
             </a>
-        }
+            @if (areaClinica is null)
+            {
+                <a class="botao-primario" asp-controller="Pet" asp-action="Cadastrar" data-acao-recepcao>
+                    <span aria-hidden="true">+</span> Cadastrar pet
+                </a>
+            }
+        </div>
     </header>
 
     @if (TempData["PetMensagem"] is string mensagem) { <p role="status">@mensagem</p> }
@@ -31,6 +37,8 @@
     }
     else
     {
+        <partial name="_FiltrosLista" model='new FiltrosListaViewModel("pets", "Nome do pet, tutor ou raça",
+            new FiltroLista("especie", "Espécie", Model.Select(item => item.Especie)))' />
         <div class="registro-quadro" role="region" aria-label="Lista de pets" tabindex="0">
             <table class="registro-tabela">
                 <thead>
@@ -39,7 +47,7 @@
                 <tbody>
                     @foreach (var item in Model)
                     {
-                        <tr>
+                        <tr data-lista-item="@($"{item.Pet.Nome} {item.Tutor} {item.Raca}")" data-filtro-especie="@item.Especie">
                             <th scope="row">@item.Pet.Nome</th>
                             <td>@item.Tutor</td>
                             <td>@item.Especie · @item.Raca</td>

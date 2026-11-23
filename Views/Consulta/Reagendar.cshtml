@@ -2,6 +2,9 @@
 @using VetCare.Models.Enums
 @{
     ViewData["Title"] = "Reagendar consulta";
+    var navegacao = NavegacaoAgenda.DaConsulta(Context.Request.Query);
+    var acaoVoltar = navegacao.VeioDoAtendimento ? "Atendimento" : "Index";
+    var rotaVoltar = navegacao.VeioDoAtendimento ? navegacao.ParaConsulta(Model.Consulta.Id) : navegacao.ParaAgenda();
 }
 
 <section class="area-panel" aria-labelledby="titulo-reagendar">
@@ -14,20 +17,17 @@
 
     <p class="registro-aviso">Horário atual: <strong>@Model.Consulta.DataHora.ToString("dd/MM/yyyy HH:mm")</strong></p>
 
-    <form class="registro-formulario" asp-controller="Consulta" asp-action="Reagendar" asp-route-id="@Model.Consulta.Id" method="post">
+    <form class="registro-formulario" asp-controller="Consulta" asp-action="Reagendar"
+          asp-all-route-data="navegacao.ParaConsulta(Model.Consulta.Id, navegacao.VeioDoAtendimento)"
+          method="post" data-veterinario-id="@Model.Consulta.VeterinarioId">
         <div asp-validation-summary="ModelOnly" class="registro-erro" role="alert"></div>
         @if (Model.Consulta.Status == StatusConsulta.Agendada)
         {
-            <div class="formulario-campo">
-                <label asp-for="NovaDataHora"></label>
-                <input asp-for="NovaDataHora" type="datetime-local" asp-format="{0:yyyy-MM-ddTHH:mm}"
-                       step="1800" aria-describedby="intervalo-reagendar" required />
-                <small id="intervalo-reagendar">Use horários nos minutos 00 ou 30.</small>
-                <span asp-validation-for="NovaDataHora" class="registro-erro"></span>
-            </div>
+            @Html.EditorFor(model => model.NovaDataHora, "HorarioConsulta")
         }
         <div class="registro-botoes">
-            <a asp-controller="Consulta" asp-action="Index" class="botao-secundario">Voltar à agenda</a>
+            <a asp-controller="Consulta" asp-action="@acaoVoltar" asp-all-route-data="@rotaVoltar"
+               class="botao-secundario">@(navegacao.VeioDoAtendimento ? "Voltar ao atendimento" : "Voltar à agenda")</a>
             @if (Model.Consulta.Status == StatusConsulta.Agendada)
             {
                 <button type="submit" class="botao-primario">Salvar novo horário</button>
@@ -35,3 +35,7 @@
         </div>
     </form>
 </section>
+
+@section Scripts {
+    <script src="~/js/consulta-horario.js" asp-append-version="true" defer></script>
+}

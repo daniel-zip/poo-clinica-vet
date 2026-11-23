@@ -71,11 +71,15 @@
     <button class="botao-primario" type="submit" disabled="@(Model.Tutores.Count == 0 || Model.Racas.Count == 0)">Salvar</button>
     @if (ViewData["TutorOrigemId"] is int tutorOrigemId)
     {
-        <a class="botao-secundario" asp-controller="Tutor" asp-action="Excluir" asp-route-id="@tutorOrigemId">Cancelar</a>
+        <a class="botao-secundario" asp-controller="Tutor" asp-action="Excluir" asp-route-id="@tutorOrigemId">Voltar à exclusão do tutor</a>
+    }
+    else if (ViewData["VoltarFicha"] is true)
+    {
+        <a class="botao-secundario" asp-action="Detalhes" asp-route-id="@ViewData["PetId"]">Voltar à ficha</a>
     }
     else
     {
-        <a class="botao-secundario" asp-action="Index">Cancelar</a>
+        <a class="botao-secundario" asp-action="Index">Voltar à lista</a>
     }
 </div>
 

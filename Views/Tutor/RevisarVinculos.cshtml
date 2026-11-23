@@ -39,8 +39,14 @@
             </table>
         </div>
         <div class="registro-botoes pet-selecao-botoes">
-            <a class="botao-secundario" asp-action="VincularPets" asp-route-id="@Model.TutorId">Voltar à seleção</a>
+            <button class="botao-secundario" type="submit" form="voltar-selecao-pets">Voltar à seleção</button>
             <button class="botao-primario" type="submit">Confirmar transferência</button>
         </div>
+    </form>
+    <form id="voltar-selecao-pets" asp-controller="Tutor" asp-action="VincularPets" asp-route-id="@Model.TutorId" method="get">
+        @foreach (var pet in Model.Pets)
+        {
+            <input type="hidden" name="petIds" value="@pet.Id" />
+        }
     </form>
 </section>

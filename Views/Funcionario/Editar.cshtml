@@ -43,7 +43,11 @@
 
         <div class="registro-botoes">
             <button class="botao-primario" type="submit">Salvar alterações</button>
-            <a class="botao-secundario" asp-action="Detalhes" asp-route-id="@id">Cancelar</a>
+            <a class="botao-secundario" asp-action="Detalhes" asp-route-id="@id">Voltar à ficha</a>
         </div>
     </form>
 </section>
+
+@section Scripts {
+    <script src="~/js/funcionario-salario.js" asp-append-version="true" defer></script>
+}

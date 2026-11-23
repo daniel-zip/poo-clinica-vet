@@ -1,6 +1,7 @@
 const dialogoPerfis = document.querySelector("#escolher-perfil");
 const botaoPerfis = document.querySelector("#abrir-perfis");
 const perfis = Array.from(dialogoPerfis.querySelectorAll("[data-profile-id]"));
+const filtrosPerfis = Array.from(dialogoPerfis.querySelectorAll("[data-profile-filter]"));
 const links = Array.from(document.querySelectorAll("[data-area-link]"));
 const paineis = Array.from(document.querySelectorAll("[data-area-panel]"));
 const linkInicio = document.querySelector("[data-home-link]");
@@ -20,6 +21,19 @@ function lerPerfil() {
 }
 
 let perfilAtual = lerPerfil();
+
+function sincronizarPerfilServidor() {
+    const id = perfilAtual?.dataset.profileId ?? "";
+    const prefixo = `${chavePerfil}=`;
+    const lerCookie = () => document.cookie.split("; ").find(item => item.startsWith(prefixo))?.slice(prefixo.length) ?? "";
+    if (lerCookie() === id) {
+        return false;
+    }
+
+    const caminho = document.documentElement.dataset.caminhoPerfil || "/";
+    document.cookie = `${prefixo}${id}; Path=${caminho}; SameSite=Lax${id ? "; Max-Age=2592000" : "; Max-Age=0"}`;
+    return lerCookie() === id;
+}
 
 function podeVisitar(area) {
     const areaPerfil = perfilAtual?.dataset.profileArea;
@@ -126,11 +140,32 @@ for (const perfil of perfis) {
             // A troca continua disponível quando o navegador bloqueia o armazenamento.
         }
 
+        sincronizarPerfilServidor();
         exibirPerfil();
         dialogoPerfis.close();
         if (paineis.length === 0) {
             location.assign(linkInicio.href);
         }
+    });
+}
+
+for (const filtro of filtrosPerfis) {
+    filtro.addEventListener("click", () => {
+        const area = filtro.dataset.profileFilter;
+        for (const opcao of filtrosPerfis) {
+            opcao.setAttribute("aria-pressed", String(opcao === filtro));
+        }
+
+        let temPerfis = false;
+        for (const perfil of perfis) {
+            const visivel = !area || perfil.dataset.profileArea === area;
+            perfil.parentElement.hidden = !visivel;
+            temPerfis ||= visivel;
+        }
+
+        dialogoPerfis.querySelector("[data-profile-empty]").textContent = temPerfis
+            ? ""
+            : "Nenhum funcionário ativo neste cargo.";
     });
 }
 
@@ -141,3 +176,6 @@ window.addEventListener("hashchange", () => {
     }
 });
 exibirPerfil();
+if (sincronizarPerfilServidor() && document.querySelector("[data-consulta-perfil]")) {
+    location.reload();
+}

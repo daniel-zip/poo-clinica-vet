@@ -9,7 +9,8 @@
             <h1>Editar tutor</h1>
         </div>
     </header>
-    <form class="registro-formulario" asp-action="Editar" asp-route-id="@ViewData["TutorId"]" method="post">
+    <form class="registro-formulario" asp-action="Editar" asp-route-id="@ViewData["TutorId"]"
+          asp-route-origem="@(ViewData["VoltarFicha"] is true ? "ficha" : null)" method="post">
         <partial name="_Formulario" model="Model" />
     </form>
 </section>

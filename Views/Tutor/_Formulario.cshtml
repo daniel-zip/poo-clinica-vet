@@ -22,5 +22,12 @@
 
 <div class="registro-botoes">
     <button class="botao-primario" type="submit">Salvar</button>
-    <a class="botao-secundario" asp-action="Index">Cancelar</a>
+    @if (ViewData["VoltarFicha"] is true)
+    {
+        <a class="botao-secundario" asp-action="Detalhes" asp-route-id="@ViewData["TutorId"]">Voltar à ficha</a>
+    }
+    else
+    {
+        <a class="botao-secundario" asp-action="Index">Voltar à lista</a>
+    }
 </div>

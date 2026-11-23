@@ -15,7 +15,13 @@
     else
     {
         <p id="descricao-perfis">Escolha um funcionário ativo para a demonstração.</p>
-        <ul class="profile-list">
+        <div class="profile-filters" role="group" aria-label="Filtrar funcionários por cargo">
+            <button class="botao-secundario" type="button" data-profile-filter="recepcao" aria-pressed="false" aria-controls="lista-perfis">Recepcionista</button>
+            <button class="botao-secundario" type="button" data-profile-filter="veterinario" aria-pressed="false" aria-controls="lista-perfis">Veterinário</button>
+            <button class="botao-secundario" type="button" data-profile-filter="administracao" aria-pressed="false" aria-controls="lista-perfis">Administrador</button>
+            <button class="botao-secundario" type="button" data-profile-filter="" aria-pressed="true" aria-controls="lista-perfis">Todos</button>
+        </div>
+        <ul class="profile-list" id="lista-perfis">
             @foreach (var perfil in Model)
             {
                 <li>
@@ -31,5 +37,6 @@
                 </li>
             }
         </ul>
+        <p class="profile-empty" role="status" data-profile-empty></p>
     }
 </dialog>

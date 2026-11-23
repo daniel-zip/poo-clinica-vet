@@ -38,10 +38,10 @@ public class TutorController : Controller
     }
 
     [HttpGet]
-    public IActionResult VincularPets(int id)
+    public IActionResult VincularPets(int id, [FromQuery] int[]? petIds = null)
     {
         var tutor = _tutores.ObterPorId(id);
-        return tutor is null ? TutorNaoEncontrado() : View(MontarSelecaoDePets(tutor, []));
+        return tutor is null ? TutorNaoEncontrado() : View(MontarSelecaoDePets(tutor, petIds ?? []));
     }
 
     [HttpPost]
@@ -125,7 +125,7 @@ public class TutorController : Controller
     }
 
     [HttpGet]
-    public IActionResult Editar(int id)
+    public IActionResult Editar(int id, [FromQuery] string? origem = null)
     {
         var tutor = _tutores.ObterPorId(id);
         if (tutor is null)
@@ -134,6 +134,7 @@ public class TutorController : Controller
         }
 
         ViewData["TutorId"] = tutor.Id;
+        ViewData["VoltarFicha"] = origem == "ficha";
         return View(new TutorFormularioViewModel
         {
             Nome = tutor.Nome,
@@ -144,7 +145,7 @@ public class TutorController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public IActionResult Editar(int id, TutorFormularioViewModel formulario)
+    public IActionResult Editar(int id, TutorFormularioViewModel formulario, [FromQuery] string? origem = null)
     {
         var tutor = _tutores.ObterPorId(id);
         if (tutor is null)
@@ -153,6 +154,7 @@ public class TutorController : Controller
         }
 
         ViewData["TutorId"] = tutor.Id;
+        ViewData["VoltarFicha"] = origem == "ficha";
         if (!ModelState.IsValid)
         {
             return View(formulario);
@@ -170,7 +172,9 @@ public class TutorController : Controller
         }
 
         TempData["TutorMensagem"] = "Tutor atualizado com sucesso.";
-        return RedirectToAction(nameof(Index));
+        return origem == "ficha"
+            ? RedirectToAction(nameof(Detalhes), new { id })
+            : RedirectToAction(nameof(Index));
     }
 
     [HttpGet]

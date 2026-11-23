@@ -1,0 +1,58 @@
+@model DateTime?
+@using System.Globalization
+@{
+    var nomeCampo = ViewData.TemplateInfo.GetFullHtmlFieldName(string.Empty);
+    var idCampo = Html.IdForModel();
+    var dataSelecionada = Model?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+    var intervalo = TimeSpan.FromMinutes(Consulta.IntervaloAgendamentosEmMinutos);
+    var horarioSelecionado = Model is DateTime dataHora && dataHora.TimeOfDay.Ticks % TimeSpan.TicksPerMinute == 0
+        ? dataHora.ToString("HH:mm", CultureInfo.InvariantCulture)
+        : null;
+}
+
+<div class="formulario-campo" data-horario-consulta data-fuso-agendamento="@Consulta.FusoHorarioAgendamentos"
+     data-url-horarios-ocupados="@Url.Action("HorariosOcupados", "Consulta")">
+    <input id="@idCampo" type="hidden" name="@nomeCampo" data-consulta-data-hora />
+    <div class="consulta-selecao-horario">
+        <div class="formulario-campo">
+            <label id="@(idCampo)_rotulo" for="@(idCampo)_data">Data</label>
+            <button id="@(idCampo)_data" class="consulta-data-botao" type="button" data-calendario-abrir
+                    data-data-inicial="@dataSelecionada" aria-haspopup="dialog" aria-controls="@(idCampo)_calendario"
+                    aria-labelledby="@(idCampo)_rotulo @(idCampo)_valor" aria-describedby="@(idCampo)_dias" disabled>
+                <span id="@(idCampo)_valor" data-calendario-valor>Selecionar data</span>
+            </button>
+            <small id="@(idCampo)_dias">Segunda a sexta-feira</small>
+            <span class="registro-erro" data-consulta-aviso-data hidden role="alert">Selecione uma data para a consulta.</span>
+
+            <dialog id="@(idCampo)_calendario" class="consulta-calendario" data-calendario
+                    aria-labelledby="@(idCampo)_titulo">
+                <div class="dialog-heading">
+                    <h2 id="@(idCampo)_titulo">Selecionar data</h2>
+                    <button class="close-button" type="button" data-calendario-fechar aria-label="Fechar calendário">×</button>
+                </div>
+                <div class="consulta-calendario-nav">
+                    <button class="switch-button" type="button" data-calendario-anterior aria-label="Mês anterior">‹</button>
+                    <strong data-calendario-mes aria-live="polite"></strong>
+                    <button class="switch-button" type="button" data-calendario-proximo aria-label="Próximo mês">›</button>
+                </div>
+                <div class="consulta-calendario-semana" aria-hidden="true">
+                    <span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span>
+                </div>
+                <div class="consulta-calendario-dias" data-calendario-dias role="group" aria-label="Dias do mês"></div>
+            </dialog>
+        </div>
+        <div class="formulario-campo">
+            <label for="@(idCampo)_horario">Horário</label>
+            <select id="@(idCampo)_horario" data-consulta-horario aria-describedby="@(idCampo)_disponibilidade" required disabled>
+                <option value="">Selecione um horário</option>
+                @for (var hora = Consulta.InicioAgendamentos; hora <= Consulta.FimAgendamentos; hora += intervalo)
+                {
+                    var horario = TimeOnly.FromTimeSpan(hora).ToString("HH:mm", CultureInfo.InvariantCulture);
+                    <option value="@horario" selected="@(horario == horarioSelecionado)">@horario</option>
+                }
+            </select>
+        </div>
+    </div>
+    <small id="@(idCampo)_disponibilidade" data-consulta-disponibilidade role="status"></small>
+    @Html.ValidationMessageFor(model => model, null, new { @class = "registro-erro" })
+</div>

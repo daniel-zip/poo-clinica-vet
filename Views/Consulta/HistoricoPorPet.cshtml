@@ -2,11 +2,13 @@
 @{
     ViewData["Title"] = "Histórico de consultas";
     ViewData["MostrarPet"] = false;
-    var areaClinica = Context.Request.Query["areaClinica"] == "veterinario" ? "veterinario" : null;
+    var areaClinica = ViewData["VeterinarioSelecionadoId"] is int || Context.Request.Query["areaClinica"] == "veterinario"
+        ? "veterinario"
+        : null;
     ViewData["AreaClinica"] = areaClinica;
 }
 
-<section class="area-panel registro-listagem" aria-labelledby="titulo-historico">
+<section class="area-panel registro-listagem" aria-labelledby="titulo-historico" data-consulta-perfil data-lista-filtravel>
     <header class="registro-cabecalho">
         <div>
             <h1 id="titulo-historico">Histórico de consultas</h1>

@@ -12,7 +12,7 @@ namespace VetCare.Repositories.Dapper;
 public class ConsultaRepository : IConsultaRepository
 {
     private const string FormatoDataHora = "yyyy-MM-dd HH:mm:ss";
-    private const string MensagemConflito = "O veterinário já tem uma consulta agendada nesse horário.";
+    private const string MensagemConflito = "O veterinário já tem uma consulta nesse horário.";
     private const int SqliteConstraintForeignKey = 787;
     private const int SqliteConstraintUnique = 2067;
 
@@ -20,6 +20,13 @@ public class ConsultaRepository : IConsultaRepository
         SELECT Id, PetId, VeterinarioId, DataHora, Status, QueixaInicial, Urgencia,
                Diagnostico, Procedimentos, Prescricao
         FROM Consultas
+        """;
+
+    private const string HorarioOcupado = """
+        SELECT 1 FROM Consultas AS ocupada
+        WHERE ocupada.VeterinarioId = @VeterinarioId AND ocupada.DataHora = @DataHora
+          AND ocupada.Status <> @Cancelada
+          AND (@ConsultaIdIgnorada IS NULL OR ocupada.Id <> @ConsultaIdIgnorada)
         """;
 
     private readonly SqliteConnectionFactory _connectionFactory;
@@ -34,9 +41,10 @@ public class ConsultaRepository : IConsultaRepository
         const string sql = """
             INSERT INTO Consultas (PetId, VeterinarioId, DataHora, Status, QueixaInicial, Urgencia,
                                    Diagnostico, Procedimentos, Prescricao)
-            VALUES (@PetId, @VeterinarioId, @DataHora, @Status, @QueixaInicial, @Urgencia,
-                    @Diagnostico, @Procedimentos, @Prescricao);
-            """;
+            SELECT @PetId, @VeterinarioId, @DataHora, @Status, @QueixaInicial, @Urgencia,
+                   @Diagnostico, @Procedimentos, @Prescricao
+            WHERE NOT EXISTS (
+            """ + HorarioOcupado + ");";
 
         var parametros = new
         {
@@ -44,6 +52,8 @@ public class ConsultaRepository : IConsultaRepository
             entidade.VeterinarioId,
             DataHora = FormatarDataHora(entidade.DataHora),
             Status = (int)entidade.Status,
+            Cancelada = (int)StatusConsulta.Cancelada,
+            ConsultaIdIgnorada = (int?)null,
             entidade.QueixaInicial,
             Urgencia = entidade.Urgencia ? 1 : 0,
             entidade.Diagnostico,
@@ -53,7 +63,8 @@ public class ConsultaRepository : IConsultaRepository
 
         try
         {
-            ExecutarGravacao(sql, parametros);
+            if (ExecutarGravacao(sql, parametros) == 0)
+                throw new RegraNegocioException(MensagemConflito);
         }
         catch (SqliteException ex) when (ex.SqliteExtendedErrorCode == SqliteConstraintForeignKey)
         {
@@ -95,19 +106,23 @@ public class ConsultaRepository : IConsultaRepository
         }
 
         // Somente fragmentos fixos compõem o SET. Os valores continuam parametrizados.
+        var condicaoHorario = entidade.HorarioAlterado ? $" AND NOT EXISTS ({HorarioOcupado})" : string.Empty;
         var sql = $"""
             UPDATE Consultas
             SET {string.Join(", ", alteracoes)}
-            WHERE Id = @Id AND Status = @Agendada{string.Concat(valoresOriginais)};
+            WHERE Id = @Id AND Status = @Agendada{string.Concat(valoresOriginais)}{condicaoHorario};
             """;
 
         var linhasAfetadas = ExecutarGravacao(sql, new
         {
             entidade.Id,
+            entidade.VeterinarioId,
+            ConsultaIdIgnorada = entidade.Id,
             DataHora = FormatarDataHora(entidade.DataHora),
             DataHoraOriginal = FormatarDataHora(entidade.DataHoraOriginal),
             Status = (int)entidade.Status,
             Agendada = (int)StatusConsulta.Agendada,
+            Cancelada = (int)StatusConsulta.Cancelada,
             entidade.Diagnostico,
             entidade.DiagnosticoOriginal,
             entidade.Procedimentos,
@@ -119,6 +134,8 @@ public class ConsultaRepository : IConsultaRepository
         if (linhasAfetadas == 0)
         {
             ExigirConsultaAgendada(entidade.Id);
+            if (entidade.HorarioAlterado && ExisteConflitoHorario(entidade.VeterinarioId, entidade.DataHora, entidade.Id))
+                throw new RegraNegocioException(MensagemConflito);
             throw new RegraNegocioException("Os dados que você tentou alterar já foram atualizados. Reabra a consulta e revise as alterações antes de salvar.");
         }
 
@@ -160,25 +177,36 @@ public class ConsultaRepository : IConsultaRepository
             .ToList();
     }
 
-    public bool ExisteConflitoHorario(int veterinarioId, DateTime dataHora, int? consultaIdIgnorada = null)
+    public List<string> ListarHorariosOcupados(int veterinarioId, DateTime data)
     {
         const string sql = """
-            SELECT EXISTS (
-                SELECT 1
-                FROM Consultas
-                WHERE VeterinarioId = @VeterinarioId
-                  AND DataHora = @DataHora
-                  AND Status = @Agendada
-                  AND (@ConsultaIdIgnorada IS NULL OR Id <> @ConsultaIdIgnorada)
-            );
+            SELECT DISTINCT substr(DataHora, 12, 5) AS Horario
+            FROM Consultas
+            WHERE VeterinarioId = @VeterinarioId AND DataHora BETWEEN @Inicio AND @Fim
+              AND Status <> @Cancelada
+            ORDER BY Horario;
             """;
+
+        using var conexao = _connectionFactory.CriarConexao();
+        return conexao.Query<string>(sql, new
+        {
+            VeterinarioId = veterinarioId,
+            Inicio = FormatarDataHora(data.Date),
+            Fim = FormatarDataHora(data.Date.AddHours(23).AddMinutes(59).AddSeconds(59)),
+            Cancelada = (int)StatusConsulta.Cancelada
+        }).ToList();
+    }
+
+    public bool ExisteConflitoHorario(int veterinarioId, DateTime dataHora, int? consultaIdIgnorada = null)
+    {
+        const string sql = "SELECT EXISTS (" + HorarioOcupado + ");";
 
         using var conexao = _connectionFactory.CriarConexao();
         return conexao.ExecuteScalar<int>(sql, new
         {
             VeterinarioId = veterinarioId,
             DataHora = FormatarDataHora(dataHora),
-            Agendada = (int)StatusConsulta.Agendada,
+            Cancelada = (int)StatusConsulta.Cancelada,
             ConsultaIdIgnorada = consultaIdIgnorada
         }) == 1;
     }

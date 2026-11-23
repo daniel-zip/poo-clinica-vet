@@ -1,0 +1,30 @@
+@model FiltrosListaViewModel
+@{
+    var ordem = StringComparer.Create(System.Globalization.CultureInfo.GetCultureInfo("pt-BR"), ignoreCase: true);
+}
+
+<div class="registro-painel registro-filtros" data-lista-controles role="group" aria-label="Filtrar resultados" hidden>
+    @if (Model.RotuloBusca is not null)
+    {
+        <div class="formulario-campo registro-filtro-busca">
+            <label for="@Model.Id-busca">@Model.RotuloBusca</label>
+            <input id="@Model.Id-busca" type="search" autocomplete="off" data-lista-busca />
+        </div>
+    }
+    @foreach (var filtro in Model.Filtros)
+    {
+        var id = $"{Model.Id}-{filtro.Chave}";
+        <div class="formulario-campo">
+            <label for="@id">@filtro.Rotulo</label>
+            <select id="@id" data-lista-filtro="@filtro.Chave">
+                <option value="">Todos</option>
+                @foreach (var opcao in filtro.Opcoes.Distinct(ordem).OrderBy(opcao => opcao, ordem))
+                {
+                    <option value="@opcao">@opcao</option>
+                }
+            </select>
+        </div>
+    }
+    <button class="botao-secundario" type="button" data-lista-limpar hidden>Limpar busca e filtros</button>
+</div>
+<p class="registro-filtro-resultado" data-lista-resultado role="status"></p>

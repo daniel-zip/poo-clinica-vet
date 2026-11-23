@@ -2,7 +2,7 @@
     var inicio = Url.Action("Index", "Home") ?? "";
 }
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-caminho-perfil="@Url.Content("~/")">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <script src="~/js/site.js" asp-append-version="true" defer></script>
     <script src="~/js/mascaras-contato.js" asp-append-version="true" defer></script>
+    <script src="~/js/filtros-lista.js" asp-append-version="true" defer></script>
 </head>
 <body>
     <a class="skip-link" href="#conteudo">Ir para o conteúdo</a>

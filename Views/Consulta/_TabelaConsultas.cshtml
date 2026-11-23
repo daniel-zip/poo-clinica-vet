@@ -3,8 +3,18 @@
 @{
     var mostrarPet = ViewData["MostrarPet"] is not false;
     var areaClinica = ViewData["AreaClinica"] as string;
+    var veterinarioSelecionadoId = ViewData["VeterinarioSelecionadoId"] as int?;
+    var navegacao = ViewData["NavegacaoAgenda"] as NavegacaoAgenda ?? new(areaClinica, null, null);
+    var filtros = new List<FiltroLista>();
+    if (!mostrarPet || areaClinica is null)
+        filtros.Add(new FiltroLista("veterinario", "Veterinário", Model.Select(consulta => consulta.VeterinarioNome)));
+    if (!mostrarPet)
+        filtros.Add(new FiltroLista("status", "Status", Enum.GetNames<StatusConsulta>()));
+    filtros.Add(new FiltroLista("urgencia", "Urgência", ["Sim", "Não"]));
+    var filtrosConsultas = new FiltrosListaViewModel("consultas", mostrarPet ? "Nome do pet" : "Data da consulta (dd/mm/aaaa)", filtros.ToArray());
 }
 
+<partial name="_FiltrosLista" model="filtrosConsultas" />
 <div class="registro-quadro" role="region" aria-label="Lista de consultas" tabindex="0">
     <table class="registro-tabela">
         <thead>
@@ -23,7 +33,11 @@
         <tbody>
             @foreach (var consulta in Model)
             {
-                <tr>
+                var rotaConsulta = navegacao.ParaConsulta(consulta.Id);
+                var urgencia = consulta.Urgencia ? "Sim" : "Não";
+                var textoBusca = mostrarPet ? consulta.PetNome : consulta.DataHora.ToString("dd/MM/yyyy");
+                <tr data-lista-item="@textoBusca" data-filtro-veterinario="@consulta.VeterinarioNome"
+                    data-filtro-status="@consulta.Status" data-filtro-urgencia="@urgencia">
                     <th scope="row" class="registro-contato">
                         <time datetime="@consulta.DataHora.ToString("yyyy-MM-ddTHH:mm")">@consulta.DataHora.ToString("dd/MM/yyyy HH:mm")</time>
                     </th>
@@ -33,18 +47,20 @@
                     }
                     <td>@consulta.VeterinarioNome</td>
                     <td>@consulta.Status</td>
-                    <td>@(consulta.Urgencia ? "Sim" : "Não")</td>
+                    <td>@urgencia</td>
                     <td>
                         <div class="registro-acoes">
-                            <a asp-controller="Consulta" asp-action="Atendimento" asp-route-id="@consulta.Id" asp-route-areaClinica="@areaClinica"
+                            <a asp-controller="Consulta" asp-action="Atendimento" asp-all-route-data="@rotaConsulta"
                                aria-label="Atendimento de @consulta.PetNome em @consulta.DataHora.ToString("dd/MM/yyyy HH:mm")">
-                                @(consulta.Status == StatusConsulta.Agendada ? "Atendimento" : "Ver atendimento")
+                                @(consulta.Status == StatusConsulta.Agendada && consulta.VeterinarioId == veterinarioSelecionadoId
+                                    ? "Atendimento"
+                                    : "Ver atendimento")
                             </a>
                             @if (consulta.Status == StatusConsulta.Agendada && areaClinica is null)
                             {
-                                <a asp-controller="Consulta" asp-action="Reagendar" asp-route-id="@consulta.Id" data-acao-recepcao
+                                <a asp-controller="Consulta" asp-action="Reagendar" asp-all-route-data="@rotaConsulta" data-acao-recepcao
                                    aria-label="Reagendar consulta de @consulta.PetNome em @consulta.DataHora.ToString("dd/MM/yyyy HH:mm")">Reagendar</a>
-                                <a class="acao-perigosa" asp-controller="Consulta" asp-action="Atendimento" asp-route-id="@consulta.Id" asp-fragment="cancelar-consulta" data-acao-recepcao
+                                <a class="acao-perigosa" asp-controller="Consulta" asp-action="Atendimento" asp-all-route-data="@rotaConsulta" asp-fragment="cancelar-consulta" data-acao-recepcao
                                    aria-label="Cancelar consulta de @consulta.PetNome em @consulta.DataHora.ToString("dd/MM/yyyy HH:mm")">Cancelar</a>
                             }
                         </div>

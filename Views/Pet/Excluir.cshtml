@@ -1,5 +1,8 @@
 @model VetCare.Models.Pet
-@{ ViewData["Title"] = "Excluir pet"; }
+@{
+    ViewData["Title"] = "Excluir pet";
+    var origem = Context.Request.Query["origem"] == "ficha" ? "ficha" : null;
+}
 
 <section class="area-panel">
     <header class="registro-cabecalho">
@@ -8,16 +11,20 @@
     <div class="registro-painel">
         <p>Confirma a exclusão de <strong>@Model.Nome</strong>?</p>
         <form asp-action="Excluir" asp-route-id="@Model.Id"
-              asp-route-tutorOrigemId="@ViewData["TutorOrigemId"]" method="post">
+              asp-route-tutorOrigemId="@ViewData["TutorOrigemId"]" asp-route-origem="@origem" method="post">
             <div asp-validation-summary="ModelOnly" class="registro-erro" role="alert"></div>
             <div class="registro-botoes">
                 @if (ViewData["TutorOrigemId"] is int tutorOrigemId)
                 {
-                    <a class="botao-secundario" asp-controller="Tutor" asp-action="Excluir" asp-route-id="@tutorOrigemId">Cancelar</a>
+                    <a class="botao-secundario" asp-controller="Tutor" asp-action="Excluir" asp-route-id="@tutorOrigemId">Voltar à exclusão do tutor</a>
+                }
+                else if (origem is not null)
+                {
+                    <a class="botao-secundario" asp-controller="Pet" asp-action="Detalhes" asp-route-id="@Model.Id">Voltar à ficha</a>
                 }
                 else
                 {
-                    <a class="botao-secundario" asp-action="Index">Cancelar</a>
+                    <a class="botao-secundario" asp-action="Index">Voltar à lista</a>
                 }
                 <button class="botao-perigoso" type="submit">Excluir pet</button>
             </div>

@@ -5,6 +5,13 @@ namespace VetCare.Models;
 
 public class Consulta
 {
+    public static readonly TimeSpan InicioAgendamentos = TimeSpan.FromHours(8);
+    public static readonly TimeSpan FimAgendamentos = TimeSpan.FromHours(20);
+    public const int IntervaloAgendamentosEmMinutos = 30;
+    public const string MensagemDiasDeAgendamento = "Escolha uma data de segunda a sexta-feira.";
+    public const string FusoHorarioAgendamentos = "America/Sao_Paulo";
+    private static readonly TimeZoneInfo FusoDaClinica = TimeZoneInfo.FindSystemTimeZoneById(FusoHorarioAgendamentos);
+
     public int Id { get; }
     public int PetId { get; }
     public int VeterinarioId { get; }
@@ -31,6 +38,7 @@ public class Consulta
         : this(0, petId, veterinarioId, dataHora, StatusConsulta.Agendada, queixaInicial, urgencia,
             null, null, null)
     {
+        ValidarPeriodoDeAgendamento(dataHora);
     }
 
     // Usado pelo repositório para recuperar o estado persistido da consulta.
@@ -67,6 +75,7 @@ public class Consulta
     {
         ExigirAgendada();
         ValidarHorario(novaDataHora);
+        ValidarPeriodoDeAgendamento(novaDataHora);
         DataHora = novaDataHora;
     }
 
@@ -111,7 +120,19 @@ public class Consulta
     {
         if (dataHora == default)
             throw new RegraNegocioException("Informe a data e o horário da consulta.");
-        if (dataHora.TimeOfDay.Ticks % (30 * TimeSpan.TicksPerMinute) != 0)
+        if (dataHora.TimeOfDay.Ticks % (IntervaloAgendamentosEmMinutos * TimeSpan.TicksPerMinute) != 0)
             throw new RegraNegocioException("Selecione um horário em intervalos de 30 minutos.");
+    }
+
+    private static void ValidarPeriodoDeAgendamento(DateTime dataHora)
+    {
+        if (dataHora.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday)
+            throw new RegraNegocioException(MensagemDiasDeAgendamento);
+        if (dataHora.TimeOfDay < InicioAgendamentos || dataHora.TimeOfDay > FimAgendamentos)
+            throw new RegraNegocioException($"Escolha um horário entre {InicioAgendamentos:hh\\:mm} e {FimAgendamentos:hh\\:mm}.");
+
+        var agora = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, FusoDaClinica).DateTime;
+        if (dataHora <= agora)
+            throw new RegraNegocioException("Escolha uma data e um horário futuros.");
     }
 }

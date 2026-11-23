@@ -15,12 +15,16 @@
             @if (areaClinica is null)
             {
                 <a class="botao-secundario acao-perigosa" asp-controller="Pet" asp-action="Excluir"
-                   asp-route-id="@Model.Pet.Id" data-acao-recepcao>Excluir pet</a>
+                   asp-route-id="@Model.Pet.Id" asp-route-origem="ficha" data-acao-recepcao>Excluir pet</a>
                 <a class="botao-primario" asp-controller="Pet" asp-action="Editar"
-                   asp-route-id="@Model.Pet.Id" data-acao-recepcao>Editar pet</a>
+                   asp-route-id="@Model.Pet.Id" asp-route-origem="ficha" data-acao-recepcao>Editar pet</a>
             }
         </div>
     </header>
+    @if (TempData["PetMensagem"] is string mensagem)
+    {
+        <p class="registro-aviso" role="status">@mensagem</p>
+    }
     <div class="registro-painel">
         <dl class="registro-dados">
             <div>

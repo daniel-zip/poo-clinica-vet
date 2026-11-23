@@ -45,13 +45,14 @@ public class PetController : Controller
     }
 
     [HttpGet]
-    public IActionResult Editar(int id, int? tutorOrigemId)
+    public IActionResult Editar(int id, int? tutorOrigemId, [FromQuery] string? origem = null)
     {
         var pet = _pets.ObterPorId(id);
         if (pet is null)
             return PetNaoEncontrado();
 
         ViewData["TutorOrigemId"] = tutorOrigemId;
+        ViewData["VoltarFicha"] = origem == "ficha";
         return MostrarFormulario(nameof(Editar), new PetFormularioViewModel
         {
             Nome = pet.Nome, DataNascimento = pet.DataNascimento, Peso = pet.Peso,
@@ -61,12 +62,14 @@ public class PetController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public IActionResult Editar(int id, PetFormularioViewModel formulario, int? tutorOrigemId)
+    public IActionResult Editar(int id, PetFormularioViewModel formulario, int? tutorOrigemId,
+        [FromQuery] string? origem = null)
     {
         if (_pets.ObterPorId(id) is null)
             return PetNaoEncontrado();
 
         ViewData["TutorOrigemId"] = tutorOrigemId;
+        ViewData["VoltarFicha"] = origem == "ficha";
         return Salvar(nameof(Editar), id, formulario, tutorOrigemId);
     }
 
@@ -137,12 +140,18 @@ public class PetController : Controller
         }
 
         TempData["PetMensagem"] = id == 0 ? "Pet cadastrado com sucesso." : "Pet atualizado com sucesso.";
-        return VoltarAposSalvar(tutorOrigemId);
+        return VoltarAposSalvar(tutorOrigemId, id);
     }
 
-    private RedirectToActionResult VoltarAposSalvar(int? tutorOrigemId) => tutorOrigemId is int id
-        ? RedirectToAction(nameof(TutorController.Excluir), "Tutor", new { id })
-        : RedirectToAction(nameof(Index));
+    private RedirectToActionResult VoltarAposSalvar(int? tutorOrigemId, int petId = 0)
+    {
+        if (tutorOrigemId is int id)
+            return RedirectToAction(nameof(TutorController.Excluir), "Tutor", new { id });
+
+        return petId > 0 && ViewData["VoltarFicha"] is true
+            ? RedirectToAction(nameof(Detalhes), new { id = petId })
+            : RedirectToAction(nameof(Index));
+    }
 
     private IActionResult MostrarFormulario(string view, PetFormularioViewModel formulario, int id = 0)
     {

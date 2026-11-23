@@ -3,7 +3,7 @@
     ViewData["Title"] = "Sugestões de catálogo";
 }
 
-<section class="area-panel registro-listagem" aria-labelledby="titulo-sugestoes">
+<section class="area-panel registro-listagem" aria-labelledby="titulo-sugestoes" data-lista-filtravel>
     <header class="registro-cabecalho">
         <h1 id="titulo-sugestoes">Sugestões de catálogo</h1>
         <a class="botao-secundario" asp-controller="Pet" asp-action="Catalogos">Voltar aos catálogos</a>
@@ -21,6 +21,8 @@
     }
     else
     {
+        <partial name="_FiltrosLista" model='new FiltrosListaViewModel("sugestoes", "Nome sugerido ou espécie",
+            new FiltroLista("tipo", "Tipo de sugestão", ["Espécie", "Raça"]))' />
         <div class="registro-quadro" role="region" aria-label="Sugestões pendentes" tabindex="0">
             <table class="registro-tabela">
                 <thead>
@@ -34,9 +36,10 @@
                 <tbody>
                     @foreach (var sugestao in Model.Pendentes)
                     {
-                        <tr>
+                        var tipo = sugestao.EspecieId.HasValue ? "Raça" : "Espécie";
+                        <tr data-lista-item="@($"{sugestao.Nome} {sugestao.EspecieNome}")" data-filtro-tipo="@tipo">
                             <th scope="row">@sugestao.Nome</th>
-                            <td>@(sugestao.EspecieId.HasValue ? "Raça" : "Espécie")</td>
+                            <td>@tipo</td>
                             <td>@(sugestao.EspecieNome ?? "—")</td>
                             <td>
                                 <form asp-controller="Pet" asp-action="AprovarSugestao" asp-route-id="@sugestao.Id" method="post">

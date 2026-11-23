@@ -6,6 +6,8 @@ public interface IConsultaRepository : IRepository<Consulta>
 {
     List<Consulta> ListarPorPet(int petId);
 
-    // Considera apenas consultas agendadas para o mesmo veterinário e horário.
+    List<string> ListarHorariosOcupados(int veterinarioId, DateTime data);
+
+    // Consultas canceladas liberam o horário.
     bool ExisteConflitoHorario(int veterinarioId, DateTime dataHora, int? consultaIdIgnorada = null);
 }

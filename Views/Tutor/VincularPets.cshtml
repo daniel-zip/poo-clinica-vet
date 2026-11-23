@@ -3,7 +3,7 @@
     ViewData["Title"] = "Vincular pets";
 }
 
-<section class="area-panel registro-listagem" aria-labelledby="titulo-vincular">
+<section class="area-panel registro-listagem" aria-labelledby="titulo-vincular" data-lista-filtravel>
     <header class="registro-cabecalho">
         <div>
             <h1 id="titulo-vincular">Vincular pets</h1>
@@ -20,7 +20,8 @@
     }
     else
     {
-        <p id="instrucao-vincular">Selecione um ou mais pets para revisar os vínculos antes de confirmar.</p>
+        <p id="instrucao-vincular">Selecione um ou mais pets para revisar os vínculos. A seleção é mantida ao filtrar a lista.</p>
+        <partial name="_FiltrosLista" model='new FiltrosListaViewModel("vincular-pets", "Nome do pet, raça ou tutor atual")' />
         <form asp-action="RevisarVinculos" asp-route-id="@Model.TutorId" method="post" aria-describedby="instrucao-vincular">
             <div class="registro-quadro" role="region" aria-label="Pets disponíveis" tabindex="0">
                 <table class="registro-tabela">
@@ -34,7 +35,7 @@
                     <tbody>
                         @foreach (var pet in Model.Pets)
                         {
-                            <tr>
+                            <tr data-lista-item="@($"{pet.Nome} {pet.Raca} {pet.TutorAtual}")">
                                 <th scope="row">
                                     <label class="pet-selecao">
                                         <input type="checkbox" name="petIds" value="@pet.Id"

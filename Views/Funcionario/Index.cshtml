@@ -1,9 +1,10 @@
 @model IReadOnlyList<Funcionario>
 @{
     ViewData["Title"] = "Funcionários";
+    string ExibirCargo(Funcionario funcionario) => funcionario is Veterinario ? "Veterinário" : funcionario.GetType().Name;
 }
 
-<section class="area-panel registro-listagem" aria-labelledby="titulo-funcionarios">
+<section class="area-panel registro-listagem" aria-labelledby="titulo-funcionarios" data-lista-filtravel>
     <header class="registro-cabecalho">
         <div>
             <h1 id="titulo-funcionarios">Funcionários</h1>
@@ -12,7 +13,11 @@
                 <p>@Model.Count @(Model.Count == 1 ? "funcionário cadastrado" : "funcionários cadastrados")</p>
             }
         </div>
-        <a class="botao-primario" asp-action="Cadastrar"><span aria-hidden="true">+</span> Cadastrar funcionário</a>
+        <div class="registro-botoes">
+            <a class="botao-secundario" asp-controller="Home" asp-action="Index"
+               asp-fragment="administracao">Voltar à Administração</a>
+            <a class="botao-primario" asp-action="Cadastrar"><span aria-hidden="true">+</span> Cadastrar funcionário</a>
+        </div>
     </header>
 
     @if (TempData["FuncionarioMensagem"] is string mensagem)
@@ -26,6 +31,9 @@
     }
     else
     {
+        <partial name="_FiltrosLista" model='new FiltrosListaViewModel("funcionarios", "Nome do funcionário",
+            new FiltroLista("cargo", "Cargo", Model.Select(ExibirCargo)),
+            new FiltroLista("situacao", "Situação", ["Ativo", "Desativado"]))' />
         <div class="registro-quadro" role="region" aria-label="Lista de funcionários" tabindex="0">
             <table class="registro-tabela">
                 <thead>
@@ -39,21 +47,18 @@
                 <tbody>
                     @foreach (var funcionario in Model)
                     {
-                        var cargo = funcionario switch
-                        {
-                            Veterinario => "Veterinário",
-                            Recepcionista => "Recepcionista",
-                            Administrador => "Administrador",
-                            _ => funcionario.GetType().Name
-                        };
-                        <tr>
+                        var cargo = ExibirCargo(funcionario);
+                        var situacao = funcionario.Ativo ? "Ativo" : "Desativado";
+                        <tr data-lista-item="@funcionario.Nome" data-filtro-cargo="@cargo" data-filtro-situacao="@situacao">
                             <th scope="row">@funcionario.Nome</th>
                             <td>@cargo</td>
-                            <td>@(funcionario.Ativo ? "Ativo" : "Desativado")</td>
+                            <td>@situacao</td>
                             <td>
                                 <div class="registro-acoes">
                                     <a asp-action="Detalhes" asp-route-id="@funcionario.Id"
                                        aria-label="Detalhes de @funcionario.Nome">Detalhes</a>
+                                    <a asp-action="Editar" asp-route-id="@funcionario.Id"
+                                       aria-label="Editar @funcionario.Nome">Editar</a>
                                 </div>
                             </td>
                         </tr>

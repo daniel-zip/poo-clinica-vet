@@ -1,13 +1,20 @@
 @model VetCare.Models.ViewModels.Pet.CatalogosViewModel
 @{
     ViewData["Title"] = "Catálogos";
-    var especies = Model.Especies.ToDictionary(especie => especie.Id, especie => especie.Nome);
+    var ordemAlfabetica = StringComparer.Create(System.Globalization.CultureInfo.GetCultureInfo("pt-BR"), ignoreCase: true);
+    var especies = Model.Especies.OrderBy(especie => especie.Nome, ordemAlfabetica).ToList();
+    var nomesEspecies = especies.ToDictionary(especie => especie.Id, especie => especie.Nome);
+    var racas = Model.Racas.OrderBy(raca => nomesEspecies[raca.EspecieId], ordemAlfabetica)
+        .ThenBy(raca => raca.Nome, ordemAlfabetica);
 }
 
 <div class="area-panel">
     <header class="registro-cabecalho">
         <h1>Catálogos</h1>
-        <a class="botao-secundario" asp-controller="Pet" asp-action="SugestoesCatalogo">Revisar sugestões</a>
+        <div class="registro-botoes">
+            <a class="botao-secundario" asp-controller="Home" asp-action="Index" asp-fragment="administracao">Voltar à Administração</a>
+            <a class="botao-secundario" asp-controller="Pet" asp-action="SugestoesCatalogo">Revisar sugestões</a>
+        </div>
     </header>
     @if (TempData["CatalogosMensagem"] is string mensagem)
     {
@@ -33,12 +40,15 @@
         }
         else
         {
-            <ul class="registro-quadro registro-lista">
-                @foreach (var especie in Model.Especies)
-                {
-                    <li>@especie.Nome</li>
-                }
-            </ul>
+            <div data-lista-filtravel>
+                <partial name="_FiltrosLista" model='new FiltrosListaViewModel("catalogo-especies", "Nome da espécie")' />
+                <ul class="registro-quadro registro-lista">
+                    @foreach (var especie in especies)
+                    {
+                        <li data-lista-item="@especie.Nome">@especie.Nome</li>
+                    }
+                </ul>
+            </div>
         }
     </section>
 
@@ -60,7 +70,7 @@
                     <label asp-for="Raca.EspecieId"></label>
                     <select asp-for="Raca.EspecieId" required>
                         <option value="">Selecione uma espécie</option>
-                        @foreach (var especie in Model.Especies)
+                        @foreach (var especie in especies)
                         {
                             <option value="@especie.Id">@especie.Nome</option>
                         }
@@ -75,12 +85,17 @@
 
         @if (Model.Racas.Count > 0)
         {
-            <ul class="registro-quadro registro-lista">
-                @foreach (var raca in Model.Racas)
-                {
-                    <li><strong>@raca.Nome</strong><span>@especies[raca.EspecieId]</span></li>
-                }
-            </ul>
+            <div data-lista-filtravel>
+                <partial name="_FiltrosLista" model='new FiltrosListaViewModel("catalogo-racas", "Nome da raça",
+                    new FiltroLista("especie", "Espécie da lista", especies.Select(especie => especie.Nome)))' />
+                <ul class="registro-quadro registro-lista">
+                    @foreach (var raca in racas)
+                    {
+                        var especie = nomesEspecies[raca.EspecieId];
+                        <li data-lista-item="@raca.Nome" data-filtro-especie="@especie"><strong>@raca.Nome</strong><span>@especie</span></li>
+                    }
+                </ul>
+            </div>
         }
         else
         {

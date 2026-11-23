@@ -19,7 +19,7 @@
                   data-desativacao-alvo="@Model.Id" data-alvo-administrador="@(Model is Administrador ? "true" : "false")">
                 <input type="hidden" name="administradorId" data-administrador-desativacao />
                 <div class="registro-botoes">
-                    <a class="botao-secundario" asp-controller="Funcionario" asp-action="Detalhes" asp-route-id="@Model.Id">Cancelar</a>
+                    <a class="botao-secundario" asp-controller="Funcionario" asp-action="Detalhes" asp-route-id="@Model.Id">Voltar à ficha</a>
                     <button class="botao-perigoso" type="submit" disabled>Confirmar desativação</button>
                 </div>
             </form>
