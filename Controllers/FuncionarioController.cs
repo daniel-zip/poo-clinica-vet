@@ -10,10 +10,10 @@ namespace VetCare.Controllers;
 
 public class FuncionarioController : Controller
 {
-    private readonly IRepository<Funcionario> _funcionarios;
+    private readonly IFuncionarioRepository _funcionarios;
     private readonly IConsultaRepository _consultas;
 
-    public FuncionarioController(IRepository<Funcionario> funcionarios, IConsultaRepository consultas)
+    public FuncionarioController(IFuncionarioRepository funcionarios, IConsultaRepository consultas)
     {
         _funcionarios = funcionarios;
         _consultas = consultas;
@@ -41,6 +41,7 @@ public class FuncionarioController : Controller
 
         ViewData["Operacoes"] = Enum.GetValues<Operacao>()
             .ToDictionary(operacao => operacao, funcionario.PodeExecutar);
+        ViewData["ReativacaoDisponivel"] = true;
 
         return View(funcionario);
     }
@@ -159,7 +160,7 @@ public class FuncionarioController : Controller
     [HttpPost]
     [ActionName(nameof(Desativar))]
     [ValidateAntiForgeryToken]
-    public IActionResult ConfirmarDesativacao([FromRoute] int id)
+    public IActionResult ConfirmarDesativacao([FromRoute] int id, [FromForm] int? administradorId)
     {
         var funcionario = ObterFuncionario(id);
         if (funcionario is null)
@@ -173,9 +174,16 @@ public class FuncionarioController : Controller
             return MostrarDesativacao(funcionario);
         }
 
+        if (!ModelState.IsValid || administradorId is null or <= 0)
+        {
+            ModelState.AddModelError(string.Empty,
+                "Selecione um administrador ativo em Trocar usuário para confirmar a desativação.");
+            return MostrarDesativacao(funcionario);
+        }
+
         try
         {
-            _funcionarios.Excluir(id);
+            _funcionarios.Desativar(id, administradorId.Value);
         }
         catch (RegraNegocioException ex)
         {
@@ -184,6 +192,32 @@ public class FuncionarioController : Controller
         }
 
         TempData["FuncionarioMensagem"] = "Funcionário desativado com sucesso.";
+        return RedirectToAction(nameof(Detalhes), new { id });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public IActionResult Reativar([FromRoute] int id)
+    {
+        if (id <= 0)
+        {
+            return NotFound();
+        }
+
+        try
+        {
+            if (!_funcionarios.Reativar(id))
+            {
+                return NotFound();
+            }
+
+            TempData["FuncionarioMensagem"] = "Funcionário reativado com sucesso.";
+        }
+        catch (RegraNegocioException ex)
+        {
+            TempData["FuncionarioErro"] = ex.Message;
+        }
+
         return RedirectToAction(nameof(Detalhes), new { id });
     }
 

@@ -16,7 +16,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IRepository<Pet>>(provider =>
             provider.GetRequiredService<PetRepository>());
 
-        services.AddScoped<IRepository<Funcionario>, FuncionarioRepository>();
+        services.AddScoped<IFuncionarioRepository, FuncionarioRepository>();
+        services.AddScoped<IRepository<Funcionario>>(provider =>
+            provider.GetRequiredService<IFuncionarioRepository>());
         services.AddScoped<IConsultaRepository, ConsultaRepository>();
         services.AddScoped<ConsultaService>();
 

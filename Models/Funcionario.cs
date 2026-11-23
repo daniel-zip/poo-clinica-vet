@@ -108,4 +108,14 @@ public abstract class Funcionario
 
         Ativo = false;
     }
+
+    public void Reativar()
+    {
+        if (Ativo)
+        {
+            throw new RegraNegocioException("O funcionário já está ativo.");
+        }
+
+        Ativo = true;
+    }
 }

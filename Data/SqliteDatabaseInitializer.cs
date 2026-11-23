@@ -8,8 +8,7 @@ namespace VetCare.Data;
 public static class SqliteDatabaseInitializer
 {
     private const string ConsultaIndex = "UX_Consultas_Veterinario_DataHora_Agendada";
-    private const string ConsultaDdlStart = "-- INICIO DDL CONSULTAS";
-    private const string ConsultaDdlEnd = "-- FIM DDL CONSULTAS";
+    private const string AutoIncrementIdPattern = @"\bId\s+INTEGER\s+PRIMARY\s+KEY\s+AUTOINCREMENT\b";
     private const RegexOptions SqlPatternOptions = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
 
     private static readonly Table[] LegacySchema =
@@ -35,6 +34,10 @@ public static class SqliteDatabaseInitializer
             new("Diagnostico", "TEXT", NotNull: false), new("Procedimentos", "TEXT", NotNull: false),
             new("Prescricao", "TEXT", NotNull: false)],
         ["PetId → Pets(Id)", "VeterinarioId → Funcionarios(Id)"]);
+
+    private static readonly Table SugestoesCatalogo = new("SugestoesCatalogo",
+        [new("Nome", "TEXT"), new("EspecieId", "INTEGER", NotNull: false)],
+        ["EspecieId → Especies(Id)"]);
 
     public static void Initialize(IConfiguration configuration, IHostEnvironment environment)
     {
@@ -87,16 +90,20 @@ public static class SqliteDatabaseInitializer
         foreach (var table in LegacySchema)
             ValidateTable(transaction, table);
 
-        if (!isEmpty && GetObjectSql(transaction, "table", Consultas.Name) is null)
-        {
-            EnsureWritable(readOnly, "migrar o esquema legado para Consultas");
-            using var migrate = CreateCommand(transaction, ReadConsultaDdl(scriptPath));
-            migrate.ExecuteNonQuery();
-        }
+        if (!isEmpty)
+            MigrateMissingTable(transaction, scriptPath, Consultas, readOnly);
 
         ValidateTable(transaction, Consultas);
         ValidateConsultaConstraints(transaction);
         ValidateConsultaIndex(transaction);
+
+        if (!isEmpty)
+            MigrateMissingTable(transaction, scriptPath, SugestoesCatalogo, readOnly);
+
+        ValidateTable(transaction, SugestoesCatalogo, exactColumns: true);
+        var suggestionSql = NormalizeSql(GetObjectSql(transaction, "table", SugestoesCatalogo.Name)!);
+        if (!Regex.IsMatch(suggestionSql, AutoIncrementIdPattern, SqlPatternOptions))
+            throw new InvalidOperationException("Esquema incompatível: SugestoesCatalogo.Id requer AUTOINCREMENT.");
     }
 
     private static void EnsureWritable(bool readOnly, string operation)
@@ -105,31 +112,49 @@ public static class SqliteDatabaseInitializer
             throw new InvalidOperationException($"O banco está em modo somente leitura. É necessário acesso de escrita para {operation}.");
     }
 
-    private static string ReadConsultaDdl(string scriptPath)
+    private static void MigrateMissingTable(SqliteTransaction transaction, string scriptPath, Table table, bool readOnly)
     {
-        var script = File.ReadAllText(scriptPath);
-        var start = script.IndexOf(ConsultaDdlStart, StringComparison.Ordinal);
-        var end = script.IndexOf(ConsultaDdlEnd, StringComparison.Ordinal);
-        if (start < 0 || end <= start + ConsultaDdlStart.Length)
-            throw new InvalidOperationException("O bloco de criação de Consultas está ausente ou inválido em Database/script.sql.");
+        if (GetObjectSql(transaction, "table", table.Name) is not null)
+            return;
 
-        return script[(start + ConsultaDdlStart.Length)..end];
+        EnsureWritable(readOnly, $"criar a tabela {table.Name}");
+        using var migrate = CreateCommand(transaction, ReadTableDdl(scriptPath, table.Name));
+        migrate.ExecuteNonQuery();
     }
 
-    private static void ValidateTable(SqliteTransaction transaction, Table table)
+    private static string ReadTableDdl(string scriptPath, string tableName)
+    {
+        var script = File.ReadAllText(scriptPath);
+        var tableMarker = tableName.ToUpperInvariant();
+        var startMarker = $"-- INICIO DDL {tableMarker}";
+        var endMarker = $"-- FIM DDL {tableMarker}";
+        var start = script.IndexOf(startMarker, StringComparison.Ordinal);
+        var end = script.IndexOf(endMarker, StringComparison.Ordinal);
+        if (start < 0 || end <= start + startMarker.Length)
+            throw new InvalidOperationException($"O bloco de criação de {tableName} está ausente ou inválido em Database/script.sql.");
+
+        return script[(start + startMarker.Length)..end];
+    }
+
+    private static void ValidateTable(SqliteTransaction transaction, Table table, bool exactColumns = false)
     {
         if (GetObjectSql(transaction, "table", table.Name) is null)
             throw new InvalidOperationException($"Esquema incompleto: tabela {table.Name} ausente.");
 
         var columns = new Dictionary<string, (string Type, bool NotNull, int PrimaryKey)>(StringComparer.OrdinalIgnoreCase);
+        var columnCount = 0;
         using (var command = CreateCommand(transaction, """
-            SELECT name, type, "notnull", pk FROM pragma_table_info(@Table, 'main');
+            SELECT name, type, "notnull", pk, hidden FROM pragma_table_xinfo(@Table, 'main');
             """))
         {
             command.Parameters.AddWithValue("@Table", table.Name);
             using var reader = command.ExecuteReader();
             while (reader.Read())
-                columns.Add(reader.GetString(0), (reader.GetString(1), reader.GetBoolean(2), reader.GetInt32(3)));
+            {
+                columnCount++;
+                if (reader.GetInt32(4) == 0)
+                    columns.Add(reader.GetString(0), (reader.GetString(1), reader.GetBoolean(2), reader.GetInt32(3)));
+            }
         }
 
         // Uma PK INTEGER que não é alias de rowid exige Id explícito em inserções.
@@ -155,6 +180,9 @@ public static class SqliteDatabaseInitializer
                     $"Esquema incompatível: {table.Name}.{expected.Name} deve ser {expected.Type} {nullability}.");
             }
         }
+
+        if (exactColumns && columnCount != table.Columns.Length + 1)
+            throw new InvalidOperationException($"Esquema incompatível: {table.Name} contém colunas não previstas.");
 
         ValidateForeignKeys(transaction, table);
     }
@@ -200,7 +228,7 @@ public static class SqliteDatabaseInitializer
     private static void ValidateConsultaConstraints(SqliteTransaction transaction)
     {
         var sql = NormalizeSql(GetObjectSql(transaction, "table", Consultas.Name)!);
-        if (!Regex.IsMatch(sql, @"\bId\s+INTEGER\s+PRIMARY\s+KEY\s+AUTOINCREMENT\b", SqlPatternOptions)
+        if (!Regex.IsMatch(sql, AutoIncrementIdPattern, SqlPatternOptions)
             || !Regex.IsMatch(sql, @"\bCHECK\s*\(\s*Status\s+IN\s*\(\s*0\s*,\s*1\s*,\s*2\s*\)\s*\)", SqlPatternOptions)
             || !Regex.IsMatch(sql, @"\bCHECK\s*\(\s*Urgencia\s+IN\s*\(\s*0\s*,\s*1\s*\)\s*\)", SqlPatternOptions))
         {
