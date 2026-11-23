@@ -14,7 +14,9 @@
     var titulo = veterinario ? "Minha agenda" : "Agenda de consultas";
     ViewData["Title"] = titulo;
     ViewData["AreaClinica"] = areaClinica;
-    var navegacao = new NavegacaoAgenda(areaClinica, Model.Data, status);
+    var veterinarioFiltro = veterinario ? null : NavegacaoAgenda.VeterinarioIdValido(Context.Request.Query["veterinarioId"]);
+    var veterinarios = ViewData["VeterinariosFiltro"] as IReadOnlyList<Veterinario> ?? [];
+    var navegacao = new NavegacaoAgenda(areaClinica, Model.Data, status, VeterinarioId: veterinarioFiltro);
     ViewData["NavegacaoAgenda"] = navegacao;
 }
 
@@ -60,6 +62,21 @@
                 <input asp-for="Data" type="date" asp-format="{0:yyyy-MM-dd}" />
                 <span asp-validation-for="Data" class="registro-erro"></span>
             </div>
+            @if (!veterinario)
+            {
+                <div class="formulario-campo">
+                    <label for="veterinario-consulta">Veterinário</label>
+                    <select id="veterinario-consulta" name="veterinarioId">
+                        <option value="">Todos</option>
+                        @foreach (var profissional in veterinarios)
+                        {
+                            <option value="@profissional.Id" selected="@(veterinarioFiltro == profissional.Id)">
+                                @profissional.Nome @(profissional.Ativo ? "" : "(desativado)")
+                            </option>
+                        }
+                    </select>
+                </div>
+            }
             <div class="formulario-campo">
                 <label for="status-consulta">Status</label>
                 <select id="status-consulta" name="status">
@@ -72,7 +89,7 @@
             </div>
             <div class="registro-botoes">
                 <button class="botao-secundario" type="submit">Filtrar</button>
-                @if (Model.Data.HasValue || status.HasValue || !ViewData.ModelState.IsValid)
+                @if (Model.Data.HasValue || status.HasValue || veterinarioFiltro.HasValue || !ViewData.ModelState.IsValid)
                 {
                     <a class="botao-secundario" asp-controller="Consulta" asp-action="Index" asp-route-areaClinica="@areaClinica">Limpar filtros</a>
                 }
@@ -84,7 +101,7 @@
             <div class="consulta-resultados" data-lista-filtravel>
                 @if (consultas.Count == 0)
                 {
-                    <p class="registro-vazio">@(Model.Data.HasValue || status.HasValue ? "Nenhuma consulta corresponde aos filtros." : "Nenhuma consulta agendada ou registrada.")</p>
+                    <p class="registro-vazio">@(Model.Data.HasValue || status.HasValue || veterinarioFiltro.HasValue ? "Nenhuma consulta corresponde aos filtros." : "Nenhuma consulta agendada ou registrada.")</p>
                 }
                 else
                 {

@@ -23,7 +23,7 @@ A aplicação lê `ConnectionStrings:DefaultConnection` do [appsettings.json](..
 
 A migração automática cobre a passagem do esquema original de cinco tabelas para o esquema com `Consultas`. Ela exige uma conexão gravável. Um banco configurado em modo somente leitura precisa estar atualizado antes da inicialização. Estruturas incompatíveis exigem correção separada.
 
-A FK de `VeterinarioId` verifica se o funcionário existe. O serviço de consultas verifica o cargo `Veterinario`. O estado ativo do cadastro ainda não faz parte dessa validação.
+A FK de `VeterinarioId` verifica se o funcionário existe. O agendamento e o reagendamento exigem um veterinário ativo. A desativação de um veterinário é bloqueada enquanto houver consultas futuras agendadas em seu nome. Essas consultas podem ser reagendadas com outro profissional ou canceladas. As consultas anteriores permanecem disponíveis na agenda geral e no histórico do pet.
 
 ## Conferir o script manualmente
 

@@ -1,6 +1,7 @@
 @model Funcionario
 @{
     ViewData["Title"] = "Desativar funcionário";
+    var consultasFuturas = ViewData["ConsultasFuturas"] is int quantidade ? quantidade : 0;
 }
 
 <section class="area-panel">
@@ -10,7 +11,19 @@
     <div class="registro-painel">
         <div asp-validation-summary="ModelOnly" class="registro-erro" role="alert"></div>
 
-        @if (Model.Ativo && ViewData.ModelState.IsValid)
+        @if (consultasFuturas > 0)
+        {
+            <p class="registro-aviso">
+                <strong>@Model.Nome</strong> tem @consultasFuturas @(consultasFuturas == 1 ? "consulta futura agendada" : "consultas futuras agendadas").
+                Antes de desativar o cadastro, reagende as consultas com outro veterinário ou cancele as que não serão mais realizadas.
+            </p>
+            <div class="registro-botoes">
+                <a class="botao-secundario" asp-controller="Funcionario" asp-action="Detalhes" asp-route-id="@Model.Id">Voltar à ficha</a>
+                <a class="botao-primario" asp-controller="Consulta" asp-action="Index" asp-route-veterinarioId="@Model.Id"
+                   asp-route-status="Agendada">Ver consultas agendadas</a>
+            </div>
+        }
+        else if (Model.Ativo && ViewData.ModelState.IsValid)
         {
             <p>Confirma a desativação de <strong>@Model.Nome</strong>? O cadastro será mantido como desativado.</p>
 
@@ -26,7 +39,7 @@
         }
         else
         {
-            @if (ViewData.ModelState.IsValid)
+            @if (!Model.Ativo && ViewData.ModelState.IsValid)
             {
                 <p><strong>@Model.Nome</strong> já está desativado.</p>
             }

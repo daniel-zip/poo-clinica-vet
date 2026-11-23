@@ -11,10 +11,12 @@ namespace VetCare.Controllers;
 public class FuncionarioController : Controller
 {
     private readonly IRepository<Funcionario> _funcionarios;
+    private readonly IConsultaRepository _consultas;
 
-    public FuncionarioController(IRepository<Funcionario> funcionarios)
+    public FuncionarioController(IRepository<Funcionario> funcionarios, IConsultaRepository consultas)
     {
         _funcionarios = funcionarios;
+        _consultas = consultas;
     }
 
     [HttpGet]
@@ -151,7 +153,7 @@ public class FuncionarioController : Controller
     public IActionResult Desativar([FromRoute] int id)
     {
         var funcionario = ObterFuncionario(id);
-        return funcionario is null ? NotFound() : View(funcionario);
+        return funcionario is null ? NotFound() : MostrarDesativacao(funcionario);
     }
 
     [HttpPost]
@@ -168,7 +170,7 @@ public class FuncionarioController : Controller
         if (!funcionario.Ativo)
         {
             ModelState.AddModelError(string.Empty, "O funcionário já está desativado.");
-            return View(nameof(Desativar), funcionario);
+            return MostrarDesativacao(funcionario);
         }
 
         try
@@ -178,7 +180,7 @@ public class FuncionarioController : Controller
         catch (RegraNegocioException ex)
         {
             ModelState.AddModelError(string.Empty, ex.Message);
-            return View(nameof(Desativar), funcionario);
+            return MostrarDesativacao(funcionario);
         }
 
         TempData["FuncionarioMensagem"] = "Funcionário desativado com sucesso.";
@@ -186,6 +188,13 @@ public class FuncionarioController : Controller
     }
 
     private Funcionario? ObterFuncionario(int id) => id > 0 ? _funcionarios.ObterPorId(id) : null;
+
+    private ViewResult MostrarDesativacao(Funcionario funcionario)
+    {
+        if (funcionario is Veterinario { Ativo: true })
+            ViewData["ConsultasFuturas"] = _consultas.ContarAgendadasAPartirDe(funcionario.Id, Consulta.AgoraNaClinica);
+        return View(nameof(Desativar), funcionario);
+    }
 
     private IActionResult MostrarEdicao(Funcionario funcionario, EditarFuncionarioViewModel formulario)
     {

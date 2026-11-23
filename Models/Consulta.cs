@@ -11,10 +11,11 @@ public class Consulta
     public const string MensagemDiasDeAgendamento = "Escolha uma data de segunda a sexta-feira.";
     public const string FusoHorarioAgendamentos = "America/Sao_Paulo";
     private static readonly TimeZoneInfo FusoDaClinica = TimeZoneInfo.FindSystemTimeZoneById(FusoHorarioAgendamentos);
+    public static DateTime AgoraNaClinica => TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, FusoDaClinica).DateTime;
 
     public int Id { get; }
     public int PetId { get; }
-    public int VeterinarioId { get; }
+    public int VeterinarioId { get; private set; }
     public DateTime DataHora { get; private set; }
     public StatusConsulta Status { get; private set; }
     public string QueixaInicial { get; }
@@ -24,11 +25,13 @@ public class Consulta
     public string? Prescricao { get; private set; }
 
     internal DateTime DataHoraOriginal { get; private set; }
+    internal int VeterinarioIdOriginal { get; private set; }
     internal string? DiagnosticoOriginal { get; private set; }
     internal string? ProcedimentosOriginais { get; private set; }
     internal string? PrescricaoOriginal { get; private set; }
 
     internal bool HorarioAlterado => DataHora != DataHoraOriginal;
+    internal bool VeterinarioAlterado => VeterinarioId != VeterinarioIdOriginal;
     internal bool DiagnosticoAlterado => Diagnostico != DiagnosticoOriginal;
     internal bool ProcedimentosAlterados => Procedimentos != ProcedimentosOriginais;
     internal bool PrescricaoAlterada => Prescricao != PrescricaoOriginal;
@@ -71,12 +74,15 @@ public class Consulta
         ConfirmarAtualizacao();
     }
 
-    public void Reagendar(DateTime novaDataHora)
+    public void Reagendar(DateTime novaDataHora, int? veterinarioId = null)
     {
         ExigirAgendada();
+        if (veterinarioId is <= 0)
+            throw new RegraNegocioException("Selecione um veterinário cadastrado.");
         ValidarHorario(novaDataHora);
         ValidarPeriodoDeAgendamento(novaDataHora);
         DataHora = novaDataHora;
+        VeterinarioId = veterinarioId ?? VeterinarioId;
     }
 
     public void Cancelar()
@@ -104,6 +110,7 @@ public class Consulta
     internal void ConfirmarAtualizacao()
     {
         DataHoraOriginal = DataHora;
+        VeterinarioIdOriginal = VeterinarioId;
         DiagnosticoOriginal = Diagnostico;
         ProcedimentosOriginais = Procedimentos;
         PrescricaoOriginal = Prescricao;
@@ -131,8 +138,7 @@ public class Consulta
         if (dataHora.TimeOfDay < InicioAgendamentos || dataHora.TimeOfDay > FimAgendamentos)
             throw new RegraNegocioException($"Escolha um horário entre {InicioAgendamentos:hh\\:mm} e {FimAgendamentos:hh\\:mm}.");
 
-        var agora = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, FusoDaClinica).DateTime;
-        if (dataHora <= agora)
+        if (dataHora <= AgoraNaClinica)
             throw new RegraNegocioException("Escolha uma data e um horário futuros.");
     }
 }

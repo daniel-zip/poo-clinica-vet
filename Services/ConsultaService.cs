@@ -30,10 +30,10 @@ public class ConsultaService
 
     public Consulta? ConsultarPorId(int id) => _consultas.ObterPorId(id);
 
-    public List<string> ListarHorariosOcupados(int veterinarioId, DateTime data)
+    public List<string> ListarHorariosOcupados(int veterinarioId, DateTime data, int? consultaId = null)
     {
         ValidarVeterinario(veterinarioId);
-        return _consultas.ListarHorariosOcupados(veterinarioId, data);
+        return _consultas.ListarHorariosOcupados(veterinarioId, data, consultaId);
     }
 
     public void Agendar(int petId, int veterinarioId, DateTime dataHora, string queixaInicial, bool urgencia)
@@ -44,10 +44,10 @@ public class ConsultaService
         _consultas.Adicionar(consulta);
     }
 
-    public void Reagendar(int id, DateTime novaDataHora)
+    public void Reagendar(int id, DateTime novaDataHora, int? veterinarioId = null)
     {
         var consulta = ObterConsulta(id);
-        consulta.Reagendar(novaDataHora);
+        consulta.Reagendar(novaDataHora, veterinarioId);
         ValidarVinculos(consulta);
         VerificarDisponibilidade(consulta, id);
         _consultas.Atualizar(consulta);
@@ -60,22 +60,31 @@ public class ConsultaService
         _consultas.Atualizar(consulta);
     }
 
-    public void RegistrarAtendimento(int id, string? diagnostico, string? procedimentos, string? prescricao)
+    public void RegistrarAtendimento(int id, string? diagnostico, string? procedimentos, string? prescricao,
+        int? veterinarioId = null)
     {
         var consulta = ObterConsulta(id);
+        ValidarResponsavel(consulta, veterinarioId);
         consulta.RegistrarAtendimento(diagnostico, procedimentos, prescricao);
         _consultas.Atualizar(consulta);
     }
 
-    public void Finalizar(int id)
+    public void Finalizar(int id, int? veterinarioId = null)
     {
         var consulta = ObterConsulta(id);
+        ValidarResponsavel(consulta, veterinarioId);
         consulta.Finalizar();
         _consultas.Atualizar(consulta);
     }
 
     private Consulta ObterConsulta(int id) =>
         ConsultarPorId(id) ?? throw new RegraNegocioException("A consulta não foi encontrada.");
+
+    private static void ValidarResponsavel(Consulta consulta, int? veterinarioId)
+    {
+        if (veterinarioId is int responsavel && consulta.VeterinarioId != responsavel)
+            throw new RegraNegocioException("O veterinário responsável mudou. Reabra a consulta para consultar o atendimento.");
+    }
 
     private void ValidarVinculos(Consulta consulta)
     {
@@ -86,8 +95,8 @@ public class ConsultaService
 
     private void ValidarVeterinario(int veterinarioId)
     {
-        if (_funcionarios.ObterPorId(veterinarioId) is not Veterinario)
-            throw new RegraNegocioException("Selecione um veterinário cadastrado.");
+        if (_funcionarios.ObterPorId(veterinarioId) is not Veterinario { Ativo: true })
+            throw new RegraNegocioException("Selecione um veterinário ativo.");
     }
 
     private void VerificarDisponibilidade(Consulta consulta, int? consultaIdIgnorada = null)

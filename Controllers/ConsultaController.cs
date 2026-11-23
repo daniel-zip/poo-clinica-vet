@@ -43,6 +43,11 @@ public class ConsultaController : Controller
             : [];
         if (veterinario is not null)
             agenda = agenda.Where(consulta => consulta.VeterinarioId == veterinario.Id).ToList();
+        if (!agendaVeterinaria && NavegacaoAgenda.VeterinarioIdValido(Request.Query["veterinarioId"]) is int id)
+            agenda = agenda.Where(consulta => consulta.VeterinarioId == id).ToList();
+
+        if (!agendaVeterinaria)
+            ViewData["VeterinariosFiltro"] = _funcionarios.Listar().OfType<Veterinario>().ToList();
 
         return View(nameof(Index), new ConsultaAgendaViewModel
         {
@@ -56,14 +61,15 @@ public class ConsultaController : Controller
 
     [HttpGet]
     [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
-    public IActionResult HorariosOcupados([FromQuery] int veterinarioId, [FromQuery] DateTime? data)
+    public IActionResult HorariosOcupados([FromQuery] int veterinarioId, [FromQuery] DateTime? data,
+        [FromQuery] int? consultaId = null)
     {
         if (!ModelState.IsValid || veterinarioId <= 0 || data is not DateTime dia)
             return BadRequest();
 
         try
         {
-            return Json(_consultas.ListarHorariosOcupados(veterinarioId, dia));
+            return Json(_consultas.ListarHorariosOcupados(veterinarioId, dia, consultaId));
         }
         catch (RegraNegocioException)
         {
@@ -108,9 +114,9 @@ public class ConsultaController : Controller
             return RedirectToAction(nameof(Atendimento), NavegacaoAgenda.DaConsulta(Request.Query, areaClinica).ParaConsulta(id));
         }
 
-        return View(nameof(Reagendar), new ConsultaReagendarViewModel
+        return MostrarReagendamento(consulta, new ConsultaReagendarViewModel
         {
-            Consulta = MontarResumo(consulta),
+            VeterinarioId = consulta.VeterinarioId,
             NovaDataHora = consulta.DataHora
         });
     }
@@ -124,11 +130,12 @@ public class ConsultaController : Controller
         if (consulta is null)
             return NotFound();
 
-        if (PodeEditar(consulta) && formulario.NovaDataHora is DateTime novaDataHora)
+        if (PodeEditar(consulta) && formulario.NovaDataHora is DateTime novaDataHora &&
+            formulario.VeterinarioId is int veterinarioId)
         {
             try
             {
-                _consultas.Reagendar(id, novaDataHora);
+                _consultas.Reagendar(id, novaDataHora, veterinarioId);
                 TempData["ConsultaMensagem"] = "Consulta reagendada com sucesso.";
                 var navegacao = NavegacaoAgenda.DaConsulta(Request.Query, areaClinica);
                 return navegacao.VeioDoAtendimento
@@ -144,8 +151,7 @@ public class ConsultaController : Controller
             }
         }
 
-        formulario.Consulta = MontarResumo(consulta);
-        return View(nameof(Reagendar), formulario);
+        return MostrarReagendamento(consulta, formulario);
     }
 
     [HttpPost]
@@ -188,7 +194,7 @@ public class ConsultaController : Controller
             try
             {
                 _consultas.RegistrarAtendimento(id, formulario.Diagnostico, formulario.Procedimentos,
-                    formulario.Prescricao);
+                    formulario.Prescricao, veterinario.Id);
                 TempData["ConsultaMensagem"] = "Atendimento salvo com sucesso.";
                 return RedirectToAction(nameof(Atendimento),
                     NavegacaoAgenda.DaConsulta(Request.Query, "veterinario").ParaConsulta(id));
@@ -202,7 +208,7 @@ public class ConsultaController : Controller
             }
         }
 
-        if (consulta.Status != StatusConsulta.Agendada)
+        if (consulta.Status != StatusConsulta.Agendada || veterinario.Id != consulta.VeterinarioId)
         {
             // Descarta os valores do POST e mantém os erros gerais do atendimento.
             foreach (var chave in ModelState.Keys.Where(chave => chave.Length > 0).ToArray())
@@ -238,7 +244,7 @@ public class ConsultaController : Controller
             if (veterinario?.Id != consulta.VeterinarioId)
                 throw new RegraNegocioException(MensagemVeterinarioResponsavel);
 
-            _consultas.Finalizar(consulta.Id);
+            _consultas.Finalizar(consulta.Id, veterinario.Id);
         }, nameof(Atendimento), "Atendimento finalizado com sucesso.",
             NavegacaoAgenda.DaConsulta(Request.Query, veterinario is not null ? "veterinario" : areaClinica)
                 .ParaConsulta(id));
@@ -306,10 +312,20 @@ public class ConsultaController : Controller
     private IActionResult MostrarAgendamento(ConsultaAgendarViewModel formulario)
     {
         formulario.Pets = _pets.Listar().Select(pet => Opcao(pet.Id, pet.Nome)).ToList();
-        formulario.Veterinarios = _funcionarios.Listar().OfType<Veterinario>()
-            .Select(veterinario => Opcao(veterinario.Id, veterinario.Nome)).ToList();
+        formulario.Veterinarios = ListarVeterinariosAtivos();
         return View(nameof(Agendar), formulario);
     }
+
+    private ViewResult MostrarReagendamento(Consulta consulta, ConsultaReagendarViewModel formulario)
+    {
+        formulario.Consulta = MontarResumo(consulta);
+        formulario.Veterinarios = ListarVeterinariosAtivos();
+        return View(nameof(Reagendar), formulario);
+    }
+
+    private List<SelectListItem> ListarVeterinariosAtivos() => _funcionarios.Listar().OfType<Veterinario>()
+            .Where(veterinario => veterinario.Ativo)
+            .Select(veterinario => Opcao(veterinario.Id, veterinario.Nome)).ToList();
 
     private static SelectListItem Opcao(int id, string nome) =>
         new(nome, id.ToString(CultureInfo.InvariantCulture));

@@ -1,7 +1,9 @@
 ﻿using global::Dapper;
 using VetCare.Data;
+using System.Globalization;
 using VetCare.Exceptions;
 using VetCare.Models;
+using VetCare.Models.Enums;
 using VetCare.Repositories.Interfaces;
 using VetCare.Services;
 
@@ -97,11 +99,26 @@ public class FuncionarioRepository : IRepository<Funcionario>
 
     public void Excluir(int id)
     {
-        const string sqlConsulta = "SELECT Ativo FROM Funcionarios WHERE Id = @Id;";
-        const string sqlDesativacao = "UPDATE Funcionarios SET Ativo = 0 WHERE Id = @Id;";
+        const string sqlDesativacao = """
+            UPDATE Funcionarios SET Ativo = 0
+            WHERE Id = @Id AND Ativo = 1 AND (Tipo <> @TipoVeterinario OR NOT EXISTS (
+                SELECT 1 FROM Consultas
+                WHERE VeterinarioId = @Id AND Status = @Agendada AND DataHora >= @Agora
+            ));
+            """;
 
         using var conexao = _connectionFactory.CriarConexao();
-        var ativo = conexao.QuerySingleOrDefault<int?>(sqlConsulta, new { Id = id });
+        var afetadas = conexao.Execute(sqlDesativacao, new
+        {
+            Id = id,
+            TipoVeterinario = nameof(Veterinario),
+            Agendada = (int)StatusConsulta.Agendada,
+            Agora = Consulta.AgoraNaClinica.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)
+        });
+        if (afetadas > 0)
+            return;
+
+        var ativo = conexao.QuerySingleOrDefault<int?>("SELECT Ativo FROM Funcionarios WHERE Id = @Id;", new { Id = id });
         if (ativo is null)
         {
             throw new RegraNegocioException("O funcionário não foi encontrado.");
@@ -112,11 +129,7 @@ public class FuncionarioRepository : IRepository<Funcionario>
             throw new RegraNegocioException("O funcionário já está desativado.");
         }
 
-        var linhasAfetadas = conexao.Execute(sqlDesativacao, new { Id = id });
-        if (linhasAfetadas == 0)
-        {
-            throw new RegraNegocioException("O funcionário não foi encontrado.");
-        }
+        throw new RegraNegocioException("Resolva as consultas futuras deste veterinário antes de desativá-lo.");
     }
 
     private static object CriarParametros(Funcionario entidade)

@@ -19,10 +19,17 @@
 
     <form class="registro-formulario" asp-controller="Consulta" asp-action="Reagendar"
           asp-all-route-data="navegacao.ParaConsulta(Model.Consulta.Id, navegacao.VeioDoAtendimento)"
-          method="post" data-veterinario-id="@Model.Consulta.VeterinarioId">
+          method="post" data-consulta-id="@Model.Consulta.Id">
         <div asp-validation-summary="ModelOnly" class="registro-erro" role="alert"></div>
         @if (Model.Consulta.Status == StatusConsulta.Agendada)
         {
+            <div class="formulario-campo">
+                <label asp-for="VeterinarioId"></label>
+                <select asp-for="VeterinarioId" asp-items="Model.Veterinarios" data-consulta-veterinario required>
+                    <option value="">Selecione um veterinário</option>
+                </select>
+                <span asp-validation-for="VeterinarioId" class="registro-erro"></span>
+            </div>
             @Html.EditorFor(model => model.NovaDataHora, "HorarioConsulta")
         }
         <div class="registro-botoes">
@@ -30,7 +37,7 @@
                class="botao-secundario">@(navegacao.VeioDoAtendimento ? "Voltar ao atendimento" : "Voltar à agenda")</a>
             @if (Model.Consulta.Status == StatusConsulta.Agendada)
             {
-                <button type="submit" class="botao-primario">Salvar novo horário</button>
+                <button type="submit" class="botao-primario">Salvar reagendamento</button>
             }
         </div>
     </form>

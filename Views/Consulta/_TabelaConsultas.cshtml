@@ -6,7 +6,7 @@
     var veterinarioSelecionadoId = ViewData["VeterinarioSelecionadoId"] as int?;
     var navegacao = ViewData["NavegacaoAgenda"] as NavegacaoAgenda ?? new(areaClinica, null, null);
     var filtros = new List<FiltroLista>();
-    if (!mostrarPet || areaClinica is null)
+    if (!mostrarPet)
         filtros.Add(new FiltroLista("veterinario", "Veterinário", Model.Select(consulta => consulta.VeterinarioNome)));
     if (!mostrarPet)
         filtros.Add(new FiltroLista("status", "Status", Enum.GetNames<StatusConsulta>()));

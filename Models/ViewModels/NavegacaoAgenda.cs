@@ -4,7 +4,7 @@ using VetCare.Models.Enums;
 namespace VetCare.Models.ViewModels;
 
 public sealed record NavegacaoAgenda(string? AreaClinica, DateTime? Data, StatusConsulta? Status,
-    bool VeioDoAtendimento = false)
+    bool VeioDoAtendimento = false, int? VeterinarioId = null)
 {
     private const string FormatoData = "yyyy-MM-dd";
 
@@ -18,14 +18,17 @@ public sealed record NavegacaoAgenda(string? AreaClinica, DateTime? Data, Status
         var area = areaClinica ?? query["areaClinica"].ToString();
 
         return new NavegacaoAgenda(area == "veterinario" ? area : null, data, status,
-            query["origem"] == "atendimento");
+            query["origem"] == "atendimento", VeterinarioIdValido(query["veterinarioAgenda"]));
     }
 
-    public Dictionary<string, string> ParaAgenda() => MontarRota("data", "status");
+    public static int? VeterinarioIdValido(string? valor) =>
+        int.TryParse(valor, NumberStyles.None, CultureInfo.InvariantCulture, out var id) && id > 0 ? id : null;
+
+    public Dictionary<string, string> ParaAgenda() => MontarRota("data", "status", "veterinarioId");
 
     public Dictionary<string, string> ParaConsulta(int? id = null, bool veioDoAtendimento = false)
     {
-        var rota = MontarRota("dataAgenda", "statusAgenda");
+        var rota = MontarRota("dataAgenda", "statusAgenda", "veterinarioAgenda");
         if (id is int consultaId)
             rota["id"] = consultaId.ToString(CultureInfo.InvariantCulture);
         if (veioDoAtendimento)
@@ -33,7 +36,7 @@ public sealed record NavegacaoAgenda(string? AreaClinica, DateTime? Data, Status
         return rota;
     }
 
-    private Dictionary<string, string> MontarRota(string chaveData, string chaveStatus)
+    private Dictionary<string, string> MontarRota(string chaveData, string chaveStatus, string chaveVeterinario)
     {
         var rota = new Dictionary<string, string>();
         if (AreaClinica is not null)
@@ -42,6 +45,8 @@ public sealed record NavegacaoAgenda(string? AreaClinica, DateTime? Data, Status
             rota[chaveData] = data.ToString(FormatoData, CultureInfo.InvariantCulture);
         if (Status is StatusConsulta status)
             rota[chaveStatus] = status.ToString();
+        if (AreaClinica is null && VeterinarioId is int veterinarioId)
+            rota[chaveVeterinario] = veterinarioId.ToString(CultureInfo.InvariantCulture);
         return rota;
     }
 }

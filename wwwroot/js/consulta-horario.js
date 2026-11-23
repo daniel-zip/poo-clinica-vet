@@ -54,7 +54,7 @@ for (const campo of document.querySelectorAll("[data-horario-consulta]")) {
     let ultimoPedido;
     let falhaNaConsulta = false;
 
-    const veterinarioAtual = () => veterinario?.value ?? formulario.dataset.veterinarioId;
+    const veterinarioAtual = () => veterinario.value;
     const dataAtual = () => selecionada?.toISOString().slice(0, 10);
     const sincronizar = () => {
         const agora = obterAgora();
@@ -107,6 +107,9 @@ for (const campo of document.querySelectorAll("[data-horario-consulta]")) {
             const url = new URL(campo.dataset.urlHorariosOcupados, document.baseURI);
             url.searchParams.set("veterinarioId", veterinarioId);
             url.searchParams.set("data", data);
+            if (formulario.dataset.consultaId) {
+                url.searchParams.set("consultaId", formulario.dataset.consultaId);
+            }
             const resposta = await fetch(url, { signal: pedido.signal, cache: "no-store" });
             if (!resposta.ok) {
                 throw new Error("A disponibilidade não foi carregada.");
@@ -200,8 +203,10 @@ for (const campo of document.querySelectorAll("[data-horario-consulta]")) {
     calendario.querySelector("[data-calendario-fechar]").addEventListener("click", () => calendario.close());
     anterior.addEventListener("click", () => mudarMes(-1));
     proximo.addEventListener("click", () => mudarMes(1));
-    veterinario?.addEventListener("change", () => {
-        horario.value = "";
+    veterinario.addEventListener("change", () => {
+        if (!formulario.dataset.consultaId) {
+            horario.value = "";
+        }
         consultarHorarios(true);
     });
     horario.addEventListener("focus", sincronizar);
