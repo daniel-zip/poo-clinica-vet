@@ -278,6 +278,7 @@ public class PetRepository : IRepository<Pet>
 
     private static bool JaEstaNoCatalogo(SqliteConnection conexao, SqliteTransaction transacao, string nome, int? especieId)
     {
+        // O nome de uma espécie é comparado ao catálogo inteiro de espécies. O de uma raça, só às raças da espécie escolhida.
         var sql = especieId.HasValue
             ? "SELECT Nome FROM Racas WHERE EspecieId = @EspecieId;"
             : "SELECT Nome FROM Especies;";

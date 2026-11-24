@@ -35,6 +35,7 @@ public class Tutor
             throw new RegraNegocioException("O pet deve estar vinculado a este tutor.");
         }
 
+        // Pets já gravados são identificados pelo ID. Antes da gravação, cada pet tem ID zero.
         if (!_pets.Contains(pet) && (pet.Id == 0 || !_pets.Any(item => item.Id == pet.Id)))
         {
             _pets.Add(pet);

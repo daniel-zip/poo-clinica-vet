@@ -53,7 +53,7 @@
                             <a asp-controller="Consulta" asp-action="Atendimento" asp-all-route-data="@rotaConsulta"
                                aria-label="Atendimento de @consulta.PetNome em @consulta.DataHora.ToString("dd/MM/yyyy HH:mm")">
                                 @(consulta.Status == StatusConsulta.Agendada && consulta.VeterinarioId == veterinarioSelecionadoId
-                                    ? "Atendimento"
+                                    ? "Realizar atendimento"
                                     : "Ver atendimento")
                             </a>
                             @if (consulta.Status == StatusConsulta.Agendada && areaClinica is null)

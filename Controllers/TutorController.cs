@@ -90,6 +90,7 @@ public class TutorController : Controller
         catch (RegraNegocioException ex)
         {
             ModelState.AddModelError(string.Empty, ex.Message);
+            // Recarrega os vínculos do banco e reaproveita os IDs que o usuário selecionou.
             return View(nameof(VincularPets), MontarSelecaoDePets(tutor, vinculos.Keys));
         }
 

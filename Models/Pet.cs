@@ -29,6 +29,7 @@ public class Pet
             throw new RegraNegocioException("Selecione o sexo do pet.");
         if (tutorId <= 0)
             throw new RegraNegocioException("Selecione um tutor cadastrado.");
+        // A raça recebida do catálogo permite validar a relação antes de guardar apenas os IDs.
         if (raca is null || raca.EspecieId != especieId)
             throw new RegraNegocioException("Selecione uma raça da espécie escolhida.");
 

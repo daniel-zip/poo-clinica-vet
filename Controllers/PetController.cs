@@ -158,6 +158,7 @@ public class PetController : Controller
     private IActionResult MostrarFormulario(string view, PetFormularioViewModel formulario, int id = 0)
     {
         ViewData["PetId"] = id;
+        // As opções vêm do banco em cada renderização, inclusive depois de um erro no formulário.
         formulario.Tutores = _tutores.Listar();
         formulario.Especies = _pets.ListarEspecies();
         formulario.Racas = _pets.ListarRacas();
