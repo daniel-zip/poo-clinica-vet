@@ -1,4 +1,5 @@
 ﻿using System.Text.RegularExpressions;
+using Dapper;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
@@ -76,15 +77,15 @@ public static class SqliteDatabaseInitializer
 
     private static void InitializeSchema(SqliteTransaction transaction, string contentRootPath, bool readOnly)
     {
-        using var hasObjects = CreateCommand(transaction, "SELECT EXISTS (SELECT 1 FROM main.sqlite_schema);");
-        var isEmpty = (long)hasObjects.ExecuteScalar()! == 0;
+        var connection = transaction.Connection!;
+        var isEmpty = connection.ExecuteScalar<long>("SELECT EXISTS (SELECT 1 FROM main.sqlite_schema);",
+            transaction: transaction) == 0;
         var scriptPath = Path.Combine(contentRootPath, "Database", "script.sql");
 
         if (isEmpty)
         {
             EnsureWritable(readOnly, "criar o esquema");
-            using var create = CreateCommand(transaction, File.ReadAllText(scriptPath));
-            create.ExecuteNonQuery();
+            connection.Execute(File.ReadAllText(scriptPath), transaction: transaction);
         }
 
         foreach (var table in LegacySchema)
@@ -118,8 +119,7 @@ public static class SqliteDatabaseInitializer
             return;
 
         EnsureWritable(readOnly, $"criar a tabela {table.Name}");
-        using var migrate = CreateCommand(transaction, ReadTableDdl(scriptPath, table.Name));
-        migrate.ExecuteNonQuery();
+        transaction.Connection!.Execute(ReadTableDdl(scriptPath, table.Name), transaction: transaction);
     }
 
     private static string ReadTableDdl(string scriptPath, string tableName)
@@ -141,29 +141,19 @@ public static class SqliteDatabaseInitializer
         if (GetObjectSql(transaction, "table", table.Name) is null)
             throw new InvalidOperationException($"Esquema incompleto: tabela {table.Name} ausente.");
 
-        var columns = new Dictionary<string, (string Type, bool NotNull, int PrimaryKey)>(StringComparer.OrdinalIgnoreCase);
-        var columnCount = 0;
-        using (var command = CreateCommand(transaction, """
+        var connection = transaction.Connection!;
+        var allColumns = connection.Query<(string Name, string Type, int NotNull, int PrimaryKey, int Hidden)>("""
             SELECT name, type, "notnull", pk, hidden FROM pragma_table_xinfo(@Table, 'main');
-            """))
-        {
-            command.Parameters.AddWithValue("@Table", table.Name);
-            using var reader = command.ExecuteReader();
-            while (reader.Read())
-            {
-                columnCount++;
-                if (reader.GetInt32(4) == 0)
-                    columns.Add(reader.GetString(0), (reader.GetString(1), reader.GetBoolean(2), reader.GetInt32(3)));
-            }
-        }
+            """, new { Table = table.Name }, transaction).AsList();
+        var columns = allColumns.Where(column => column.Hidden == 0)
+            .ToDictionary(column => column.Name, StringComparer.OrdinalIgnoreCase);
 
         // Uma PK INTEGER que não é alias de rowid exige Id explícito em inserções.
-        using var primaryKeyIndex = CreateCommand(transaction, """
+        var primaryKeyIndex = connection.ExecuteScalar<int?>("""
             SELECT 1 FROM pragma_index_list(@Table, 'main') WHERE origin = 'pk' LIMIT 1;
-            """);
-        primaryKeyIndex.Parameters.AddWithValue("@Table", table.Name);
+            """, new { Table = table.Name }, transaction);
         if (!columns.TryGetValue("Id", out var id) || !id.Type.Equals("INTEGER", StringComparison.OrdinalIgnoreCase)
-            || id.PrimaryKey != 1 || primaryKeyIndex.ExecuteScalar() is not null)
+            || id.PrimaryKey != 1 || primaryKeyIndex is not null)
         {
             throw new InvalidOperationException($"Esquema incompatível: {table.Name}.Id deve ser a chave primária INTEGER gerada pelo SQLite.");
         }
@@ -173,7 +163,7 @@ public static class SqliteDatabaseInitializer
             if (!columns.TryGetValue(expected.Name, out var actual))
                 throw new InvalidOperationException($"Esquema incompleto: coluna {table.Name}.{expected.Name} ausente.");
 
-            if (!actual.Type.Equals(expected.Type, StringComparison.OrdinalIgnoreCase) || actual.NotNull != expected.NotNull)
+            if (!actual.Type.Equals(expected.Type, StringComparison.OrdinalIgnoreCase) || (actual.NotNull != 0) != expected.NotNull)
             {
                 var nullability = expected.NotNull ? "NOT NULL" : "NULL";
                 throw new InvalidOperationException(
@@ -181,7 +171,7 @@ public static class SqliteDatabaseInitializer
             }
         }
 
-        if (exactColumns && columnCount != table.Columns.Length + 1)
+        if (exactColumns && allColumns.Count != table.Columns.Length + 1)
             throw new InvalidOperationException($"Esquema incompatível: {table.Name} contém colunas não previstas.");
 
         ValidateForeignKeys(transaction, table);
@@ -190,20 +180,16 @@ public static class SqliteDatabaseInitializer
     private static void ValidateForeignKeys(SqliteTransaction transaction, Table table)
     {
         var foreignKeys = new List<string>();
-        using (var command = CreateCommand(transaction, """
+        var connection = transaction.Connection!;
+        var keys = connection.Query<(string From, string TargetTable, string? To, int Sequence, string OnUpdate, string OnDelete)>("""
             SELECT "from", "table", "to", seq, on_update, on_delete FROM pragma_foreign_key_list(@Table, 'main');
-            """))
+            """, new { Table = table.Name }, transaction);
+        foreach (var key in keys)
         {
-            command.Parameters.AddWithValue("@Table", table.Name);
-            using var reader = command.ExecuteReader();
-            while (reader.Read())
-            {
-                if (reader.GetInt32(3) != 0 || reader.GetString(4) != "NO ACTION" || reader.GetString(5) != "NO ACTION")
-                    throw new InvalidOperationException($"Esquema incompatível: chave estrangeira não prevista em {table.Name}.");
+            if (key.Sequence != 0 || key.OnUpdate != "NO ACTION" || key.OnDelete != "NO ACTION")
+                throw new InvalidOperationException($"Esquema incompatível: chave estrangeira não prevista em {table.Name}.");
 
-                var targetColumn = reader.IsDBNull(2) ? "Id" : reader.GetString(2);
-                foreignKeys.Add($"{reader.GetString(0)} → {reader.GetString(1)}({targetColumn})");
-            }
+            foreignKeys.Add($"{key.From} → {key.TargetTable}({key.To ?? "Id"})");
         }
 
         if (foreignKeys.Count != table.ForeignKeys.Length
@@ -217,11 +203,10 @@ public static class SqliteDatabaseInitializer
         if (foreignKeys.Count == 0)
             return;
 
-        using var check = CreateCommand(transaction, """
+        var invalidReference = connection.ExecuteScalar<int?>("""
             SELECT 1 FROM pragma_foreign_key_check(@Table, 'main') LIMIT 1;
-            """);
-        check.Parameters.AddWithValue("@Table", table.Name);
-        if (check.ExecuteScalar() is not null)
+            """, new { Table = table.Name }, transaction);
+        if (invalidReference is not null)
             throw new InvalidOperationException($"Banco inconsistente: {table.Name} contém referências sem registro correspondente.");
     }
 
@@ -239,21 +224,14 @@ public static class SqliteDatabaseInitializer
 
     private static void ValidateConsultaIndex(SqliteTransaction transaction)
     {
-        var indexedColumns = new List<string?>();
-        using (var command = CreateCommand(transaction, """
+        var indexedColumns = transaction.Connection!.Query<string?>("""
             SELECT columns.name
             FROM pragma_index_list('Consultas', 'main') AS indexes
             CROSS JOIN pragma_index_xinfo(indexes.name, 'main') AS columns
             WHERE indexes.name = @Index COLLATE NOCASE
               AND indexes."unique" = 1 AND indexes.partial = 1 AND columns."key" = 1
             ORDER BY columns.seqno;
-            """))
-        {
-            command.Parameters.AddWithValue("@Index", ConsultaIndex);
-            using var reader = command.ExecuteReader();
-            while (reader.Read())
-                indexedColumns.Add(reader.IsDBNull(0) ? null : reader.GetString(0));
-        }
+            """, new { Index = ConsultaIndex }, transaction);
 
         var sql = GetObjectSql(transaction, "index", ConsultaIndex);
         if (!indexedColumns.SequenceEqual(["VeterinarioId", "DataHora"], StringComparer.OrdinalIgnoreCase)
@@ -279,23 +257,10 @@ public static class SqliteDatabaseInitializer
                 : "''";
         });
 
-    private static string? GetObjectSql(SqliteTransaction transaction, string type, string name)
-    {
-        using var command = CreateCommand(transaction, """
+    private static string? GetObjectSql(SqliteTransaction transaction, string type, string name) =>
+        transaction.Connection!.ExecuteScalar<string?>("""
             SELECT sql FROM main.sqlite_schema WHERE type = @Type AND name = @Name COLLATE NOCASE;
-            """);
-        command.Parameters.AddWithValue("@Type", type);
-        command.Parameters.AddWithValue("@Name", name);
-        return command.ExecuteScalar() as string;
-    }
-
-    private static SqliteCommand CreateCommand(SqliteTransaction transaction, string sql)
-    {
-        var command = transaction.Connection!.CreateCommand();
-        command.Transaction = transaction;
-        command.CommandText = sql;
-        return command;
-    }
+            """, new { Type = type, Name = name }, transaction);
 
     private sealed record Column(string Name, string Type, bool NotNull = true);
     private sealed record Table(string Name, Column[] Columns, string[] ForeignKeys);

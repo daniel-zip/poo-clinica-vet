@@ -50,11 +50,6 @@ public sealed class SqliteConnectionFactory
     {
         var conexao = new SqliteConnection(_connectionString);
         conexao.Open();
-
-        using var comando = conexao.CreateCommand();
-        comando.CommandText = "PRAGMA foreign_keys = ON;";
-        comando.ExecuteNonQuery();
-
         return conexao;
     }
 }

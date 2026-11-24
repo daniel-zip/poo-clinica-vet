@@ -23,6 +23,7 @@ function lerPerfil() {
 let perfilAtual = lerPerfil();
 
 function sincronizarPerfilServidor() {
+    // A interface guarda o perfil no navegador. A agenda lê o mesmo ID pelo cookie de demonstração.
     const id = perfilAtual?.dataset.profileId ?? "";
     const prefixo = `${chavePerfil}=`;
     const lerCookie = () => document.cookie.split("; ").find(item => item.startsWith(prefixo))?.slice(prefixo.length) ?? "";

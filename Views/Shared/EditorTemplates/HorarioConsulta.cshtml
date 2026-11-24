@@ -12,6 +12,7 @@
 
 <div class="formulario-campo" data-horario-consulta data-fuso-agendamento="@Consulta.FusoHorarioAgendamentos"
      data-url-horarios-ocupados="@Url.Action("HorariosOcupados", "Consulta")">
+    @* O calendário e a lista de horários são separados na tela. O formulário envia ambos em um único DateTime. *@
     <input id="@idCampo" type="hidden" name="@nomeCampo" data-consulta-data-hora />
     <div class="consulta-selecao-horario">
         <div class="formulario-campo">

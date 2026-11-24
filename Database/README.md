@@ -1,6 +1,6 @@
 # Banco de dados do VetCare
 
-O VetCare usa SQLite. O [script.sql](script.sql) cria as tabelas `Tutores`, `Especies`, `Racas`, `Pets`, `Funcionarios`, `Consultas` e `SugestoesCatalogo`. O script inclui de 5 a 8 registros fictícios por tabela fora da fila de sugestões, que começa vazia.
+O VetCare usa SQLite. O [script.sql](script.sql) cria as tabelas `Tutores`, `Especies`, `Racas`, `Pets`, `Funcionarios`, `Consultas` e `SugestoesCatalogo`. O script inclui de 5 a 8 registros fictícios por tabela, com cinco sugestões de catálogo para demonstrar a fila em bancos novos.
 
 Cada consulta referencia um pet e um funcionário. O índice único parcial `UX_Consultas_Veterinario_DataHora_Agendada` impede que o mesmo veterinário tenha duas consultas agendadas (`Status = 0`) no mesmo horário. Consultas canceladas (`1`) e finalizadas (`2`) ficam no histórico e não ocupam esse horário. O repositório usa `yyyy-MM-dd HH:mm:ss` para gravar e ler `DataHora`.
 

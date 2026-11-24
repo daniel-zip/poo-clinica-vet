@@ -13,6 +13,7 @@
     </p>
 
     <form asp-action="VincularPets" asp-route-id="@Model.TutorId" method="post" aria-describedby="aviso-vinculos">
+        @* Envia o tutor exibido na revisão para detectar mudanças de vínculo antes da transferência. *@
         @foreach (var pet in Model.Pets)
         {
             <input type="hidden" name="vinculos[@(pet.Id)]" value="@pet.TutorAtualId" />

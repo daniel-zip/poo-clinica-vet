@@ -52,6 +52,7 @@ public class TutorController : Controller
         if (tutor is null)
             return TutorNaoEncontrado();
 
+        // Recarrega os pets antes da revisão para mostrar os tutores atuais dos registros selecionados.
         var selecao = MontarSelecaoDePets(tutor, petIds);
         var pets = selecao.Pets.Where(pet => selecao.Selecionados.Contains(pet.Id)).ToList();
         if (!ModelState.IsValid || pets.Count != selecao.Selecionados.Count)

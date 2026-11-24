@@ -2,6 +2,7 @@ const formatoMesConsulta = new Intl.DateTimeFormat("pt-BR", { month: "long", yea
 const formatoDiaConsulta = new Intl.DateTimeFormat("pt-BR", { dateStyle: "long", timeZone: "UTC" });
 const formatoDataConsulta = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeZone: "UTC" });
 
+// Representa dias do calendário em UTC para evitar que o fuso do navegador mude o dia selecionado.
 function criarDataCalendario(ano, mes, dia) {
     const data = new Date(0);
     data.setUTCFullYear(ano, mes, dia);
@@ -28,6 +29,7 @@ for (const campo of document.querySelectorAll("[data-horario-consulta]")) {
     const anterior = calendario.querySelector("[data-calendario-anterior]");
     const proximo = calendario.querySelector("[data-calendario-proximo]");
 
+    // Os horários passados são calculados no fuso da clínica.
     const relogioClinica = new Intl.DateTimeFormat("en-CA", {
         timeZone: campo.dataset.fusoAgendamento, year: "numeric", month: "2-digit", day: "2-digit",
         hour: "2-digit", minute: "2-digit", hourCycle: "h23"
@@ -89,6 +91,7 @@ for (const campo of document.querySelectorAll("[data-horario-consulta]")) {
 
     const consultarHorarios = async (novaSelecao = false) => {
         if (novaSelecao) {
+            // Uma resposta da combinação anterior de data e veterinário não deve substituir a atual.
             ultimoPedido?.abort();
             ultimoPedido = null;
             ocupados = null;
@@ -108,6 +111,7 @@ for (const campo of document.querySelectorAll("[data-horario-consulta]")) {
             url.searchParams.set("veterinarioId", veterinarioId);
             url.searchParams.set("data", data);
             if (formulario.dataset.consultaId) {
+                // No reagendamento, a própria consulta não bloqueia seu horário atual.
                 url.searchParams.set("consultaId", formulario.dataset.consultaId);
             }
             const resposta = await fetch(url, { signal: pedido.signal, cache: "no-store" });

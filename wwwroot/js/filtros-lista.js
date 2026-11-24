@@ -1,4 +1,5 @@
 (() => {
+    // A busca aceita diferenças de acentuação e de maiúsculas, como José e jose.
     function normalizarTexto(texto) {
         return texto.normalize("NFD").replace(/\p{M}/gu, "").toLocaleLowerCase("pt-BR").trim();
     }
@@ -32,6 +33,7 @@
                     (numero !== "" && numeros.some(valor => valor.includes(numero)));
                 const correspondeFiltros = ativos.every(filtro =>
                     elemento.getAttribute(`data-filtro-${filtro.dataset.listaFiltro}`) === filtro.value);
+                // Ocultar a linha preserva os campos marcados no formulário de vínculo de pets.
                 elemento.hidden = !(correspondeBusca && correspondeFiltros);
                 if (!elemento.hidden) visiveis++;
             }

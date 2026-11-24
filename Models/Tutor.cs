@@ -6,6 +6,7 @@ public class Tutor
 {
     private readonly List<Pet> _pets = [];
 
+    // A coleção é somente leitura para que todo vínculo passe pela validação em AdicionarPet.
     public IReadOnlyList<Pet> Pets => _pets.AsReadOnly();
     public int Id { get; }
     public string Nome { get; private set; } = string.Empty;

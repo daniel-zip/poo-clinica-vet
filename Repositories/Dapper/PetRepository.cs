@@ -16,6 +16,7 @@ public class PetRepository : IRepository<Pet>
         FROM Pets p INNER JOIN Racas r ON r.Id = p.RacaId
         """;
 
+    // Confere tutor, raça e espécie no mesmo comando que grava o pet.
     private const string VinculosValidos = """
         EXISTS (SELECT 1 FROM Tutores WHERE Id = @TutorId)
         AND EXISTS (
@@ -87,6 +88,7 @@ public class PetRepository : IRepository<Pet>
         if (tutoresAtuais.Count == 0)
             throw new RegraNegocioException("Selecione pelo menos um pet.");
 
+        // Compara o tutor visto na revisão. Se algum vínculo mudou, a transação desfaz o lote inteiro.
         const string sql = """
             UPDATE Pets
             SET TutorId = @TutorId
@@ -115,6 +117,7 @@ public class PetRepository : IRepository<Pet>
 
         using var conexao = _connectionFactory.CriarConexao();
         using var transacao = conexao.BeginTransaction(deferred: false);
+        // Preserva o histórico de consultas e aceita bases antigas sem essa tabela.
         var temTabelaConsultas = conexao.ExecuteScalar<int>(verificarTabelaConsultas, transaction: transacao) == 1;
         var sql = temTabelaConsultas
             ? excluirPet + " AND NOT EXISTS (SELECT 1 FROM Consultas WHERE PetId = @Id);"
@@ -156,24 +159,20 @@ public class PetRepository : IRepository<Pet>
             .ToList();
     }
 
-    public void AdicionarEspecie(string nome)
+    public void AdicionarEspecie(string nome) => CadastrarItemCatalogo(nome, null);
+
+    public void AdicionarRaca(string nome, int especieId) => CadastrarItemCatalogo(nome, especieId);
+
+    private void CadastrarItemCatalogo(string nome, int? especieId)
     {
         using var conexao = _connectionFactory.CriarConexao();
-        conexao.Execute("INSERT INTO Especies (Nome) VALUES (@Nome);", new { Nome = nome });
-    }
-
-    public void AdicionarRaca(string nome, int especieId)
-    {
-        const string sql = """
-            INSERT INTO Racas (Nome, EspecieId)
-            SELECT @Nome, Id FROM Especies WHERE Id = @EspecieId;
-            """;
-
-        using var conexao = _connectionFactory.CriarConexao();
-        if (conexao.Execute(sql, new { Nome = nome, EspecieId = especieId }) == 0)
-        {
-            throw new RegraNegocioException("Selecione uma espécie cadastrada.");
-        }
+        // Reserva a escrita antes de consultar o catálogo para evitar cadastros simultâneos do mesmo nome.
+        using var transacao = conexao.BeginTransaction(deferred: false);
+        if (!InserirNoCatalogo(conexao, transacao, nome.Trim(), especieId))
+            throw new RegraNegocioException(especieId.HasValue
+                ? "Já existe uma raça com esse nome para a espécie selecionada."
+                : "Já existe uma espécie com esse nome.");
+        transacao.Commit();
     }
 
     public bool SugestoesDisponiveis()
@@ -191,6 +190,8 @@ public class PetRepository : IRepository<Pet>
             """;
 
         using var conexao = _connectionFactory.CriarConexao();
+        // A lista vazia significa que a fila foi configurada sem itens
+        // O null indica que a tabela ainda não existe.
         return TemTabelaDeSugestoes(conexao) ? conexao.Query<SugestaoCatalogo>(sql).ToList() : null;
     }
 
@@ -201,7 +202,7 @@ public class PetRepository : IRepository<Pet>
             throw new RegraNegocioException("Informe o nome da sugestão.");
 
         using var conexao = _connectionFactory.CriarConexao();
-        using var transacao = conexao.BeginTransaction();
+        using var transacao = conexao.BeginTransaction(deferred: false);
         VerificarFilaDeSugestoes(conexao, transacao);
 
         if (especieId.HasValue && conexao.ExecuteScalar<int>(
@@ -225,25 +226,43 @@ public class PetRepository : IRepository<Pet>
     public bool AprovarSugestao(int id)
     {
         using var conexao = _connectionFactory.CriarConexao();
-        using var transacao = conexao.BeginTransaction();
+        using var transacao = conexao.BeginTransaction(deferred: false);
         VerificarFilaDeSugestoes(conexao, transacao);
 
         var sugestao = conexao.QuerySingleOrDefault<SugestaoCatalogo>(
             "SELECT Id, Nome, EspecieId FROM SugestoesCatalogo WHERE Id = @Id;", new { Id = id }, transacao)
             ?? throw new RegraNegocioException("Esta sugestão não está mais pendente.");
 
-        var precisaInserir = !JaEstaNoCatalogo(conexao, transacao, sugestao.Nome, sugestao.EspecieId);
-        if (precisaInserir)
-        {
-            var sql = sugestao.EspecieId.HasValue
-                ? "INSERT INTO Racas (Nome, EspecieId) VALUES (@Nome, @EspecieId);"
-                : "INSERT INTO Especies (Nome) VALUES (@Nome);";
-            conexao.Execute(sql, new { sugestao.Nome, sugestao.EspecieId }, transacao);
-        }
-
+        // Se o item já foi cadastrado, a aprovação apenas retira a sugestão da fila.
+        var inserida = InserirNoCatalogo(conexao, transacao, sugestao.Nome.Trim(), sugestao.EspecieId);
         conexao.Execute("DELETE FROM SugestoesCatalogo WHERE Id = @Id;", new { Id = id }, transacao);
         transacao.Commit();
-        return precisaInserir;
+        return inserida;
+    }
+
+    public void ReprovarSugestao(int id)
+    {
+        using var conexao = _connectionFactory.CriarConexao();
+        using var transacao = conexao.BeginTransaction(deferred: false);
+        VerificarFilaDeSugestoes(conexao, transacao);
+
+        if (conexao.Execute("DELETE FROM SugestoesCatalogo WHERE Id = @Id;", new { Id = id }, transacao) == 0)
+            throw new RegraNegocioException("Esta sugestão não está mais pendente.");
+        transacao.Commit();
+    }
+
+    private static bool InserirNoCatalogo(SqliteConnection conexao, SqliteTransaction transacao, string nome, int? especieId)
+    {
+        if (JaEstaNoCatalogo(conexao, transacao, nome, especieId))
+            return false;
+
+        var sql = especieId.HasValue
+            ? "INSERT INTO Racas (Nome, EspecieId) SELECT @Nome, Id FROM Especies WHERE Id = @EspecieId;"
+            : "INSERT INTO Especies (Nome) VALUES (@Nome);";
+        if (conexao.Execute(sql, new { Nome = nome, EspecieId = especieId }, transacao) == 0)
+            throw new RegraNegocioException("Selecione uma espécie cadastrada.");
+
+        return true;
     }
 
     private static bool TemTabelaDeSugestoes(SqliteConnection conexao, SqliteTransaction? transacao = null) =>
@@ -291,6 +310,7 @@ public class PetRepository : IRepository<Pet>
         public string NomeRaca { get; set; } = string.Empty;
         public int EspecieDaRacaId { get; set; }
 
+        // O Dapper preenche o registro e a entidade é reconstruída pelo construtor validado do domínio.
         public Pet ParaPet() => new(Id, Nome, DataNascimento, Peso, (SexoPet)Sexo,
             TutorId, EspecieId, new Raca(RacaId, NomeRaca, EspecieDaRacaId));
     }

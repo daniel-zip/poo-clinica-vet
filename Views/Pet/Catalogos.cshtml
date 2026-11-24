@@ -61,6 +61,7 @@
         else
         {
             <form class="registro-formulario" asp-action="CadastrarRaca" method="post">
+                <div asp-validation-summary="ModelOnly" class="registro-erro" role="alert"></div>
                 <div class="formulario-campo">
                     <label asp-for="Raca.Nome"></label>
                     <input asp-for="Raca.Nome" required />

@@ -46,6 +46,7 @@ public class Pet
     {
         var hoje = DateTime.Today;
         var idade = hoje.Year - DataNascimento.Year;
+        // Desconta um ano se o pet ainda não fez aniversário neste ano.
         return DataNascimento.AddYears(idade) > hoje ? idade - 1 : idade;
     }
 }

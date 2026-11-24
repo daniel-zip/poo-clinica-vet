@@ -115,6 +115,7 @@ public class PetController : Controller
             return MostrarFormulario(view, formulario, id);
         }
 
+        // Os IDs do formulário são conferidos no servidor, inclusive a relação entre espécie e raça.
         var tutor = _tutores.ObterPorId(tutorId);
         var raca = _pets.ObterRacaPorId(racaId);
         if (tutor is null)
@@ -145,6 +146,7 @@ public class PetController : Controller
 
     private RedirectToActionResult VoltarAposSalvar(int? tutorOrigemId, int petId = 0)
     {
+        // Quando a edição começou na exclusão do tutor, volta à conferência dos vínculos restantes.
         if (tutorOrigemId is int id)
             return RedirectToAction(nameof(TutorController.Excluir), "Tutor", new { id });
 
@@ -232,6 +234,23 @@ public class PetController : Controller
         return RedirectToAction(nameof(SugestoesCatalogo));
     }
 
+    [HttpPost("Administracao/Catalogos/Sugestoes/{id:int}/Reprovar")]
+    [ValidateAntiForgeryToken]
+    public IActionResult ReprovarSugestao([FromRoute] int id)
+    {
+        try
+        {
+            _pets.ReprovarSugestao(id);
+            TempData["SugestaoMensagem"] = "Sugestão reprovada e removida da fila.";
+        }
+        catch (RegraNegocioException ex)
+        {
+            TempData["SugestaoErro"] = ex.Message;
+        }
+
+        return RedirectToAction(nameof(SugestoesCatalogo));
+    }
+
     [HttpPost("Administracao/Catalogos/Especies")]
     [ValidateAntiForgeryToken]
     public IActionResult CadastrarEspecie([Bind(Prefix = "Especie")] EspecieCadastroViewModel formulario)
@@ -241,7 +260,16 @@ public class PetController : Controller
             return MostrarCatalogos(new CatalogosViewModel { Especie = formulario });
         }
 
-        _pets.AdicionarEspecie(formulario.Nome.Trim());
+        try
+        {
+            _pets.AdicionarEspecie(formulario.Nome);
+        }
+        catch (RegraNegocioException ex)
+        {
+            ModelState.AddModelError("Especie.Nome", ex.Message);
+            return MostrarCatalogos(new CatalogosViewModel { Especie = formulario });
+        }
+
         TempData["CatalogosMensagem"] = "Espécie cadastrada com sucesso.";
         return RedirectToAction(nameof(Catalogos));
     }
@@ -257,11 +285,11 @@ public class PetController : Controller
 
         try
         {
-            _pets.AdicionarRaca(formulario.Nome.Trim(), especieId);
+            _pets.AdicionarRaca(formulario.Nome, especieId);
         }
         catch (RegraNegocioException ex)
         {
-            ModelState.AddModelError("Raca.EspecieId", ex.Message);
+            ModelState.AddModelError(string.Empty, ex.Message);
             return MostrarCatalogos(new CatalogosViewModel { Raca = formulario });
         }
 

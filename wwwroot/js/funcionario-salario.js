@@ -54,6 +54,7 @@
     });
 
     campo.form.addEventListener("formdata", evento => {
+        // A exibição usa real brasileiro. O POST usa o separador decimal esperado pelo MVC.
         const dados = evento.formData;
         const separador = dados.getAll("__Invariant").includes(campo.name) ? "." : campo.dataset.separadorDecimal;
         dados.set(campo.name, lerValor().replace(",", separador));

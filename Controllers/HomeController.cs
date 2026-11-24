@@ -9,4 +9,11 @@ public class HomeController : Controller
     {
         return View();
     }
+
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    public IActionResult Error()
+    {
+        Response.StatusCode = StatusCodes.Status500InternalServerError;
+        return View();
+    }
 }

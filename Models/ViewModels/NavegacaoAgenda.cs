@@ -28,6 +28,7 @@ public sealed record NavegacaoAgenda(string? AreaClinica, DateTime? Data, Status
 
     public Dictionary<string, string> ParaConsulta(int? id = null, bool veioDoAtendimento = false)
     {
+        // Leva os filtros de origem até os formulários para restaurá-los no retorno à agenda.
         var rota = MontarRota("dataAgenda", "statusAgenda", "veterinarioAgenda");
         if (id is int consultaId)
             rota["id"] = consultaId.ToString(CultureInfo.InvariantCulture);

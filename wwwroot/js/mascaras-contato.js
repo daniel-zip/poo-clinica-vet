@@ -50,6 +50,7 @@
         });
 
         campo.addEventListener("input", () => {
+            // Preserva a posição do cursor pelo número de dígitos, mesmo após inserir a pontuação.
             const quantidade = soDigitos(campo.value.slice(0, campo.selectionStart)).length;
             const digitos = soDigitos(campo.value).slice(0, 11);
             campo.value = formatar(digitos);

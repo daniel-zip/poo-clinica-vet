@@ -2,6 +2,7 @@
     const especie = document.querySelector("[data-pet-especie]");
     const raca = document.querySelector("[data-pet-raca]");
     const placeholder = raca.options[0];
+    // Guarda as opções completas para reaproveitá-las ao voltar a uma espécie.
     const racasCadastradas = Array.from(raca.options).slice(1);
 
     function filtrarRacas() {

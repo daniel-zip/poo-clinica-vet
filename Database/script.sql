@@ -148,6 +148,13 @@ INSERT INTO Racas (Id, Nome, EspecieId)
 SELECT 7, 'Hamster Sírio', 5
 WHERE NOT EXISTS (SELECT 1 FROM Racas WHERE Id = 7);
 
+INSERT INTO SugestoesCatalogo (Nome, EspecieId)
+VALUES ('Furão', NULL),
+       ('Réptil', NULL),
+       ('Golden Retriever', 1),
+       ('Maine Coon', 2),
+       ('Lionhead', 4);
+
 INSERT INTO Pets (Id, Nome, DataNascimento, Peso, Sexo, TutorId, EspecieId, RacaId)
 SELECT 1, 'Thor', '2020-03-15', 28.5, 1, 1, 1, 1
 WHERE NOT EXISTS (SELECT 1 FROM Pets WHERE Id = 1);

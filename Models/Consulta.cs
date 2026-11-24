@@ -41,6 +41,7 @@ public class Consulta
         : this(0, petId, veterinarioId, dataHora, StatusConsulta.Agendada, queixaInicial, urgencia,
             null, null, null)
     {
+        ValidarHorario(dataHora);
         ValidarPeriodoDeAgendamento(dataHora);
     }
 
@@ -59,7 +60,9 @@ public class Consulta
         if (string.IsNullOrWhiteSpace(queixaInicial))
             throw new RegraNegocioException("Informe a queixa inicial da consulta.");
 
-        ValidarHorario(dataHora);
+        // Registros antigos conservam o horário gravado. A grade atual só vale para novas marcações.
+        if (dataHora == default)
+            throw new RegraNegocioException("Informe a data e o horário da consulta.");
 
         Id = id;
         PetId = petId;
@@ -125,8 +128,6 @@ public class Consulta
 
     private static void ValidarHorario(DateTime dataHora)
     {
-        if (dataHora == default)
-            throw new RegraNegocioException("Informe a data e o horário da consulta.");
         if (dataHora.TimeOfDay.Ticks % (IntervaloAgendamentosEmMinutos * TimeSpan.TicksPerMinute) != 0)
             throw new RegraNegocioException("Selecione um horário em intervalos de 30 minutos.");
     }

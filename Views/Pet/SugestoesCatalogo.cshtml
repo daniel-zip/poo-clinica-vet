@@ -30,7 +30,7 @@
                         <th scope="col">Nome sugerido</th>
                         <th scope="col">Tipo</th>
                         <th scope="col">Espécie da raça</th>
-                        <th scope="col">Ação</th>
+                        <th scope="col">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -42,9 +42,14 @@
                             <td>@tipo</td>
                             <td>@(sugestao.EspecieNome ?? "—")</td>
                             <td>
-                                <form asp-controller="Pet" asp-action="AprovarSugestao" asp-route-id="@sugestao.Id" method="post">
-                                    <button class="botao-secundario" type="submit" aria-label="Aprovar @sugestao.Nome">Aprovar</button>
-                                </form>
+                                <div class="registro-botoes">
+                                    <form asp-controller="Pet" asp-action="AprovarSugestao" asp-route-id="@sugestao.Id" method="post">
+                                        <button class="botao-secundario" type="submit" aria-label="Aprovar @sugestao.Nome">Aprovar</button>
+                                    </form>
+                                    <form asp-controller="Pet" asp-action="ReprovarSugestao" asp-route-id="@sugestao.Id" method="post">
+                                        <button class="botao-secundario acao-perigosa" type="submit" aria-label="Reprovar @sugestao.Nome">Reprovar</button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                     }
