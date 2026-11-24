@@ -3,7 +3,7 @@ using VetCare.Models.Enums;
 
 namespace VetCare.Models;
 
-public abstract class Funcionario
+public abstract class Funcionario //criação de classe abstrata Funcionario com elementos comuns à todos os funcionários
 {
     public int Id { get; }
     public string Nome { get; private set; } = string.Empty;
@@ -13,9 +13,9 @@ public abstract class Funcionario
     public string Endereco { get; private set; } = string.Empty;
     public double Salario { get; private set; }
     public int NivelAcesso { get; private set; }
-    public bool Ativo { get; private set; }
+    public bool Ativo { get; private set; } //propriedades do funcionário
 
-    protected Funcionario(
+    protected Funcionario(  //construtor da classe
         int id,
         string nome,
         string cpf,
@@ -36,8 +36,7 @@ public abstract class Funcionario
         AtualizarInformacoes(nome, cpf, email, telefone, endereco, salario, nivelAcesso);
     }
 
-    public abstract bool PodeExecutar(Operacao operacao);
-
+    public abstract bool PodeExecutar(Operacao operacao); //subclasses devem implementar o método com suas próprias caracteísticas
     protected abstract int NivelAcessoPadrao { get; }
 
     public virtual void AtualizarInformacoes(
@@ -49,7 +48,7 @@ public abstract class Funcionario
         double salario,
         int nivelAcesso)
     {
-        if (string.IsNullOrWhiteSpace(nome))
+        if (string.IsNullOrWhiteSpace(nome)) //inserção de validações para os campos se alguma não for cumprida vai lançar uma exceção
         {
             throw new RegraNegocioException("Informe o nome do funcionário.");
         }
@@ -90,7 +89,7 @@ public abstract class Funcionario
             throw new RegraNegocioException("O nível de acesso informado não é compatível com o cargo do funcionário.");
         }
 
-        Nome = nome.Trim();
+        Nome = nome.Trim(); //atribuindo valor aos campos
         Cpf = cpfNormalizado;
         Email = email.Trim();
         Telefone = telefone.Trim();
@@ -99,7 +98,7 @@ public abstract class Funcionario
         NivelAcesso = nivelAcesso;
     }
 
-    public void Desativar()
+    public void Desativar() //métodos para desativar ou reativar funcionário
     {
         if (!Ativo)
         {

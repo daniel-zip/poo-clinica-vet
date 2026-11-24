@@ -10,11 +10,11 @@ using VetCare.Services;
 
 namespace VetCare.Repositories.Dapper;
 
-public class FuncionarioRepository : IFuncionarioRepository
+public class FuncionarioRepository : IFuncionarioRepository //implementa a interface genérica irepository para funcionario
 {
     private readonly SqliteConnectionFactory _connectionFactory;
 
-    public FuncionarioRepository(SqliteConnectionFactory connectionFactory)
+    public FuncionarioRepository(SqliteConnectionFactory connectionFactory)//conexão com o banco de dados via injeção de dependência
     {
         _connectionFactory = connectionFactory;
     }
@@ -29,11 +29,11 @@ public class FuncionarioRepository : IFuncionarioRepository
             );
             """;
 
-        using var conexao = _connectionFactory.CriarConexao();
+        using var conexao = _connectionFactory.CriarConexao(); //cria conexão com o banco
         conexao.Execute(sql, CriarParametros(entidade));
     }
 
-    public Funcionario? ObterPorId(int id)
+    public Funcionario? ObterPorId(int id) 
     {
         using var conexao = _connectionFactory.CriarConexao();
         return ObterPorId(conexao, id);
@@ -48,7 +48,8 @@ public class FuncionarioRepository : IFuncionarioRepository
             """;
 
         var registro = conexao.QuerySingleOrDefault<FuncionarioRegistro>(sql, new { Id = id }, transacao);
-        return registro?.ParaFuncionario();
+        return registro?.ParaFuncionario(); ////método do dapper que executa uma consulta SQL para obter um funcionário 
+        //pelo seu ID e retorna null se não encontrado
     }
 
     public List<Funcionario> Listar()

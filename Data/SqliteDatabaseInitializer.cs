@@ -128,8 +128,8 @@ public static class SqliteDatabaseInitializer
         var tableMarker = tableName.ToUpperInvariant();
         var startMarker = $"-- INICIO DDL {tableMarker}";
         var endMarker = $"-- FIM DDL {tableMarker}";
-        var start = script.IndexOf(startMarker, StringComparison.Ordinal);
-        var end = script.IndexOf(endMarker, StringComparison.Ordinal);
+        var start = script.IndexOf(startMarker, StringComparison.OrdinalIgnoreCase);
+        var end = script.IndexOf(endMarker, StringComparison.OrdinalIgnoreCase);
         if (start < 0 || end <= start + startMarker.Length)
             throw new InvalidOperationException($"O bloco de criação de {tableName} está ausente ou inválido em Database/script.sql.");
 

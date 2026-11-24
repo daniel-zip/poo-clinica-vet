@@ -1,6 +1,6 @@
 PRAGMA foreign_keys = ON;
 
-CREATE TABLE IF NOT EXISTS Tutores (
+CREATE TABLE IF NOT EXISTS Tutores ( --tabela tutores
     Id INTEGER PRIMARY KEY AUTOINCREMENT,
     Nome TEXT NOT NULL,
     CPF TEXT NOT NULL,
@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS Funcionarios (
     Crmv TEXT NULL,
     Especialidade TEXT NULL,
     Ativo INTEGER NOT NULL DEFAULT 1,
-    CHECK (Tipo IN ('Recepcionista', 'Veterinario', 'Administrador')),
+    CHECK (Tipo IN ('Recepcionista', 'Veterinario', 'Administrador')), --aqui são definidas as possíveis classes de funcionários
     CHECK (Ativo IN (0, 1)),
     CHECK (
         (Tipo = 'Recepcionista' AND NivelAcesso = 1) OR
@@ -61,7 +61,7 @@ CREATE TABLE IF NOT EXISTS Funcionarios (
     )
 );
 
--- INICIO DDL CONSULTAS
+-- inicio ddl consultas
 CREATE TABLE Consultas (
     Id INTEGER PRIMARY KEY AUTOINCREMENT,
     PetId INTEGER NOT NULL,
@@ -77,19 +77,19 @@ CREATE TABLE Consultas (
     FOREIGN KEY (VeterinarioId) REFERENCES Funcionarios(Id)
 );
 
-CREATE UNIQUE INDEX UX_Consultas_Veterinario_DataHora_Agendada
+CREATE UNIQUE INDEX UX_Consultas_Veterinario_DataHora_Agendada --cria índice para consultas agendadas
 ON Consultas (VeterinarioId, DataHora)
 WHERE Status = 0;
--- FIM DDL CONSULTAS
+-- fim ddl consultas
 
--- INICIO DDL SUGESTOESCATALOGO
+-- inicio ddl sugestoescatalogo
 CREATE TABLE SugestoesCatalogo (
     Id INTEGER PRIMARY KEY AUTOINCREMENT,
     Nome TEXT NOT NULL,
     EspecieId INTEGER NULL,
     FOREIGN KEY (EspecieId) REFERENCES Especies(Id)
 );
--- FIM DDL SUGESTOESCATALOGO
+-- fim ddl sugestoescatalogo
 
 INSERT INTO Tutores (Id, Nome, CPF, Telefone)
 SELECT 1, 'Ana Ribeiro', '12345678901', '(16) 99111-0001'
