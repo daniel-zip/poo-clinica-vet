@@ -4,6 +4,7 @@ namespace VetCare.Models.ViewModels.Pet;
 
 public class CatalogosViewModel
 {
+    // Os prefixos Especie e Raca separam os campos Nome dos dois formulários na mesma tela.
     public EspecieCadastroViewModel Especie { get; set; } = new();
     public RacaCadastroViewModel Raca { get; set; } = new();
     public IReadOnlyList<Especie> Especies { get; set; } = [];

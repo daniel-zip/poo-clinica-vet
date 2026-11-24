@@ -32,6 +32,7 @@ public class TutorRepository : IRepository<Tutor>
         return conexao.QuerySingleOrDefault<TutorRegistro>(sql, new { Id = id })?.ParaTutor();
     }
 
+    // Faz a listagem dos tutores por ordem alfabética
     public List<Tutor> Listar()
     {
         const string sql = "SELECT Id, Nome, CPF, Telefone FROM Tutores ORDER BY Nome, Id;";
@@ -64,6 +65,7 @@ public class TutorRepository : IRepository<Tutor>
                 throw new RegraNegocioException("O tutor não foi encontrado.");
             }
         }
+        // A chave estrangeira do pet protege o vínculo mesmo que ele tenha sido criado após a abertura da confirmação.
         catch (SqliteException ex) when (
             ex.SqliteExtendedErrorCode == 787 ||
             (ex.SqliteExtendedErrorCode == 1811 &&
@@ -73,6 +75,7 @@ public class TutorRepository : IRepository<Tutor>
         }
     }
 
+    // O Dapper preenche este registro. O construtor de Tutor concentra a validação e a normalização dos dados.
     private sealed class TutorRegistro
     {
         public int Id { get; set; }
