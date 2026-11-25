@@ -22,14 +22,14 @@
             @if (pets is not null) { <a href="@pets">Pets</a> }
             else { <span>Pets <small>Em desenvolvimento</small></span> }
         </li>
-        <li>
-            @if (consultas is not null) { <a href="@consultas">Agendamentos</a> }
-            else { <span>Agendamentos <small>Em desenvolvimento</small></span> }
-        </li>
         @if (sugerirCatalogo is not null)
         {
             <li><a href="@sugerirCatalogo">Sugerir espécie ou raça</a></li>
         }
+        <li>
+            @if (consultas is not null) { <a href="@consultas">Agendamentos</a> }
+            else { <span>Agendamentos <small>Em desenvolvimento</small></span> }
+        </li>
     </ul>
 </section>
 

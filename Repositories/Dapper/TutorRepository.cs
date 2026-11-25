@@ -65,7 +65,7 @@ public class TutorRepository : IRepository<Tutor>
                 throw new RegraNegocioException("O tutor não foi encontrado.");
             }
         }
-        // A chave estrangeira do pet protege o vínculo mesmo que ele tenha sido criado após a abertura da confirmação.
+        
         catch (SqliteException ex) when (
             ex.SqliteExtendedErrorCode == 787 ||
             (ex.SqliteExtendedErrorCode == 1811 &&
