@@ -210,7 +210,7 @@ public class ConsultaController : Controller
 
         if (consulta.Status != StatusConsulta.Agendada || veterinario.Id != consulta.VeterinarioId)
         {
-            // Descarta os valores do POST e mantém os erros gerais do atendimento.
+            // Remove valores antigos do ModelState para evitar erros de atualização dos dados
             foreach (var chave in ModelState.Keys.Where(chave => chave.Length > 0).ToArray())
                 ModelState.Remove(chave);
 

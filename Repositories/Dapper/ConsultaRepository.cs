@@ -11,6 +11,7 @@ namespace VetCare.Repositories.Dapper;
 
 public class ConsultaRepository : IConsultaRepository
 {
+    // Pro SQLite poder comparar os dados como texto - FormatoDataHora
     private const string FormatoDataHora = "yyyy-MM-dd HH:mm:ss";
     private const string MensagemConflito = "O veterinário já tem uma consulta nesse horário.";
     private const string MensagemVeterinarioIndisponivel = "Selecione um veterinário ativo.";
@@ -42,6 +43,7 @@ public class ConsultaRepository : IConsultaRepository
 
     public void Adicionar(Consulta entidade)
     {
+        // Realiza novamente verificações
         const string sql = """
             INSERT INTO Consultas (PetId, VeterinarioId, DataHora, Status, QueixaInicial, Urgencia,
                                    Diagnostico, Procedimentos, Prescricao)
@@ -74,6 +76,8 @@ public class ConsultaRepository : IConsultaRepository
                 throw new RegraNegocioException(MensagemConflito);
             }
         }
+
+        // Mensagem de erro caso o vínculo deixe de existir
         catch (SqliteException ex) when (ex.SqliteExtendedErrorCode == SqliteConstraintForeignKey)
         {
             throw new RegraNegocioException(
@@ -97,7 +101,7 @@ public class ConsultaRepository : IConsultaRepository
     }
 
     public void Atualizar(Consulta entidade)
-    {
+    {  
         var alteracoes = new List<string>();
         var valoresOriginais = new List<string>();
         var reagendando = entidade.HorarioAlterado || entidade.VeterinarioAlterado;
@@ -115,10 +119,11 @@ public class ConsultaRepository : IConsultaRepository
             return;
         }
 
-        // Somente fragmentos fixos compõem o SET. Os valores continuam parametrizados.
         var condicaoHorario = reagendando
             ? $" AND EXISTS ({VeterinarioAtivo}) AND NOT EXISTS ({HorarioOcupado})"
             : string.Empty;
+            
+        // verifica se o responsável é o mesmo
         if (!reagendando && (entidade.DiagnosticoAlterado || entidade.ProcedimentosAlterados ||
             entidade.PrescricaoAlterada || entidade.Status == StatusConsulta.Finalizada))
             valoresOriginais.Add(" AND VeterinarioId = @VeterinarioIdOriginal");

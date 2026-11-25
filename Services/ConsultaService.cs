@@ -20,9 +20,12 @@ public class ConsultaService
 
     public List<Consulta> ListarAgenda(DateTime? data = null)
     {
+        // var: idenficar automaticamente o tipo de variável
         var consultas = _consultas.Listar();
         return data is DateTime dia
+            // Se não for vazia, percorre até encontrar e seleciona a Consulta específica (a partir do Where(...))
             ? consultas.Where(consulta => consulta.DataHora.Date == dia.Date).ToList()
+            // Se for, retorna todas as Consultas
             : consultas;
     }
 
@@ -37,7 +40,8 @@ public class ConsultaService
     }
 
     public void Agendar(int petId, int veterinarioId, DateTime dataHora, string queixaInicial, bool urgencia)
-    {
+    { 
+        // Chama o construtor public do Consulta.cs
         var consulta = new Consulta(petId, veterinarioId, dataHora, queixaInicial, urgencia);
         ValidarVinculos(consulta);
         VerificarDisponibilidade(consulta);
@@ -46,6 +50,7 @@ public class ConsultaService
 
     public void Reagendar(int id, DateTime novaDataHora, int? veterinarioId = null)
     {
+        // Recupera uma consulta do banco e edita data e hora
         var consulta = ObterConsulta(id);
         consulta.Reagendar(novaDataHora, veterinarioId);
         ValidarVinculos(consulta);
@@ -77,6 +82,8 @@ public class ConsultaService
         _consultas.Atualizar(consulta);
     }
 
+    /*  Diferentemente do método ConsultarPorId, que retorna null se o ID da Consulta não existir,
+    esse método retorna uma Excessão (ou seja, ele busca Consultas que de fato existem) */
     private Consulta ObterConsulta(int id) =>
         ConsultarPorId(id) ?? throw new RegraNegocioException("A consulta não foi encontrada.");
 
